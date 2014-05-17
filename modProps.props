@@ -4,7 +4,7 @@
   <PropertyGroup Label="UserMacros">
     <appsDir>C:\Program Files (x86)\Steam\SteamApps</appsDir>
     <modName>apocalypse-swarm</modName>
-    <debugCommandLine>-console -windows -dev -w 1280 -h 600</debugCommandLine>
+    <debugCommandLine>-console -window -dev -w 800 -h 600</debugCommandLine>
   </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup />
