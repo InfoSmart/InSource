@@ -4,6 +4,7 @@
 //
 // $NoKeywords: $
 //=============================================================================//
+
 #include "cbase.h"
 #include "vgui_int.h"
 #include "ienginevgui.h"

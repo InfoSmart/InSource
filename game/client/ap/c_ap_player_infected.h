@@ -5,19 +5,20 @@
 
 #pragma once
 
-#include "c_in_player.h"
+#include "c_ap_player.h"
 
 //=========================================================
 // >> C_IN_Player
 //=========================================================
-class C_AP_PlayerInfected : public C_IN_Player
+class C_AP_PlayerInfected : public C_AP_Player
 {
 public:
-	DECLARE_CLASS( C_AP_PlayerInfected, C_IN_Player );
+	DECLARE_CLASS( C_AP_PlayerInfected, C_AP_Player );
 	DECLARE_CLIENTCLASS();
 
 	// Principales
-	C_AP_PlayerInfected();
+	//C_AP_PlayerInfected();
+	virtual void Spawn();
 };
 
 #endif  // C_AP_PLAYER_INFECTED_H

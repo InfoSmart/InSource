@@ -38,8 +38,6 @@ public:
 	const WaterRenderInfo_t &GetWaterRenderInfo();
 #endif
 
-	void SetMainViewMatrix( VMatrix view );
-
 private:
 	bool m_bReady;
 

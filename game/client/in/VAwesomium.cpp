@@ -10,65 +10,88 @@ using namespace vgui;
 using namespace Awesomium;
 
 int VAwesomium::m_iNumberOfViews = 0;
+static Awesomium::WebSession *m_WebSession;
 
-VAwesomium::VAwesomium(Panel *parent, const char *panelName) : Panel(parent, panelName)
+//=========================================================
+// Constructor
+//=========================================================
+VAwesomium::VAwesomium( Panel *parent, const char *panelName ) : Panel( parent, panelName )
 {
 	m_iNumberOfViews++;
 	
-	m_iTextureId = surface()->CreateNewTextureID(true);
+	m_iTextureId	= surface()->CreateNewTextureID( true );
+	m_WebCore		= WebCore::instance();
 
-	m_WebCore = WebCore::instance();
-
-	if( !m_WebCore )
+	// Aún no existe una instancia de Awesomium
+	if ( !m_WebCore )
 	{
+		// Configuración del navegador
 		WebStringArray options;
 		options.Push( WSLit("--disable-3d-apis") );
 		options.Push( WSLit("--disable-file-system") );
 		options.Push( WSLit("--disable-geolocation") );
 		options.Push( WSLit("--disable-gl-multisampling") );
 		options.Push( WSLit("--disable-glsl-translator") );
-		options.Push( WSLit("--disable-fullscreen") );
 
+		// Configuración del proceso
 		WebConfig config;
 		config.log_level							= kLogLevel_Verbose;
 		config.remote_debugging_port				= 1337;
-		config.additional_options					= options;
+		//config.additional_options					= options;
 		config.reduce_memory_usage_on_navigation	= true;
 
-		m_WebCore =  WebCore::Initialize(config);
+		// Creamos la instancia
+		m_WebCore = WebCore::Initialize( config );
 	}
 
+	// Configuración para las sesiones
 	WebPreferences m_WebPrefs;
-	m_WebPrefs.enable_plugins					= false;
-	m_WebPrefs.enable_gpu_acceleration			= true;
-	m_WebPrefs.allow_scripts_to_close_windows	= false;
+	m_WebPrefs.enable_dart							= false;
+	m_WebPrefs.enable_plugins						= false;
+	m_WebPrefs.enable_gpu_acceleration				= true;
+	m_WebPrefs.enable_web_security					= false;
+	m_WebPrefs.allow_scripts_to_open_windows		= false;
+	m_WebPrefs.allow_scripts_to_close_windows		= false;
+	m_WebPrefs.allow_running_insecure_content		= true;
 
-	m_WebSession = m_WebCore->CreateWebSession( WSLit("./session/"), m_WebPrefs );
+	// Creamos una sesión
+	if ( !m_WebSession )
+		m_WebSession = m_WebCore->CreateWebSession( WSLit(VarArgs("%s\\%s", engine->GetGameDirectory(), "sessions")), m_WebPrefs );
 
+	// Creamos una vista
 	m_WebView = m_WebCore->CreateWebView( GetTall(), GetWide(), m_WebSession );
-	m_WebView->set_js_method_handler(this);
-	m_WebView->set_load_listener(this);
+	m_WebView->set_js_method_handler( this );
+	m_WebView->set_load_listener( this );
 	m_WebView->SetTransparent( true );
 
-	SetPaintEnabled(true);
-	SetPaintBackgroundEnabled(false);
+	SetPaintEnabled( true );
+	SetPaintBackgroundEnabled( false );
 }
 
+//=========================================================
+// Destructor
+//=========================================================
 VAwesomium::~VAwesomium()
 {
 	m_iNumberOfViews--;
 	
-	m_WebView->Destroy();
-	m_WebSession->Release();
+	// Destruimos la vista y la sesión
+	if ( m_WebView )
+		m_WebView->Destroy();
 	
-	if( m_WebCore )
+	// Apagamos la instancia/proceso
+	if ( m_WebCore && m_iNumberOfViews <= 0 )
 	{
-		m_WebCore->Shutdown();	
+		if ( m_WebSession )
+			m_WebSession->Release();
+
+		m_WebCore->Shutdown();
+
+		m_WebSession	= NULL;
+		m_WebCore		= NULL;
 	}
 
-	m_WebView = NULL;
-	m_WebSession = NULL;
-	m_WebCore = NULL;
+	m_WebView		= NULL;
 	m_BitmapSurface = NULL;
 }
 
@@ -91,9 +114,9 @@ void VAwesomium::Paint()
 {
 	BaseClass::Paint();
 
-	m_BitmapSurface = (BitmapSurface*)m_WebView->surface();
+	m_BitmapSurface = ( BitmapSurface * )m_WebView->surface();
 
-	if (m_BitmapSurface && m_iNearestPowerWidth + m_iNearestPowerHeight > 0)
+	if ( m_BitmapSurface && m_iNearestPowerWidth + m_iNearestPowerHeight > 0 )
 	{
 		AllocateViewBuffer();
 		DrawBrowserView();
@@ -115,10 +138,17 @@ int VAwesomium::NearestPowerOfTwo(int v)
 
 void VAwesomium::AllocateViewBuffer()
 {
-	unsigned char* buffer = new unsigned char[m_iNearestPowerWidth * m_iNearestPowerHeight * DEPTH];
-	m_BitmapSurface->CopyTo(buffer, m_BitmapSurface->width() * DEPTH, DEPTH, true, false);
+	//2048 - 1024 - 8388608 
+	//DevMsg( "[AllocateViewBuffer] %i - %i - %i \n", m_iNearestPowerWidth, m_iNearestPowerHeight, (m_iNearestPowerWidth * m_iNearestPowerHeight * DEPTH) );
 
-	vgui::surface()->DrawSetTextureRGBA(m_iTextureId, buffer, m_BitmapSurface->width(), m_BitmapSurface->height(), true, true);
+	//
+	// FIXME: Esto consume 20fps !!!
+	//
+
+	unsigned char* buffer = new unsigned char[m_iNearestPowerWidth * m_iNearestPowerHeight * DEPTH];
+	m_BitmapSurface->CopyTo( buffer, m_BitmapSurface->width() * DEPTH, DEPTH, true, false );
+
+	vgui::surface()->DrawSetTextureRGBA( m_iTextureId, buffer, m_BitmapSurface->width(), m_BitmapSurface->height() );
 
 	delete buffer;
 	buffer = NULL;
@@ -126,34 +156,35 @@ void VAwesomium::AllocateViewBuffer()
 
 void VAwesomium::DrawBrowserView()
 {
-	vgui::surface()->DrawSetTexture(m_iTextureId);
-	vgui::surface()->DrawSetColor(255, 255, 255, 255);
+	//
+	// FIXME: Esto consume 10 fps
+	//
 
-	float scalerW = float(m_BitmapSurface->width()) / float(m_iNearestPowerWidth);
-	float scalerT = float(m_BitmapSurface->height()) / float(m_iNearestPowerHeight);
+	vgui::surface()->DrawSetTexture( m_iTextureId );
+	vgui::surface()->DrawSetColor( 255, 255, 255, 255 );
 
-	vgui::surface()->DrawTexturedSubRect(0, 0, m_BitmapSurface->width(), m_BitmapSurface->height(), 0.0f, 0.0f, scalerW, scalerT);
+	vgui::surface()->DrawTexturedSubRect( 0, 0, m_BitmapSurface->width(), m_BitmapSurface->height(), 0.0f, 0.0f, 1, 1 );
 }
 
-void VAwesomium::OnCursorMoved(int x, int y)
+void VAwesomium::OnCursorMoved( int x, int y )
 {
-	m_WebView->InjectMouseMove(x, y);
+	m_WebView->InjectMouseMove( x, y );
 }
 
-void VAwesomium::OnRequestFocus(vgui::VPANEL subFocus, vgui::VPANEL defaultPanel)
+void VAwesomium::OnRequestFocus( vgui::VPANEL subFocus, vgui::VPANEL defaultPanel )
 {
-	BaseClass::OnRequestFocus(subFocus, defaultPanel);
+	BaseClass::OnRequestFocus( subFocus, defaultPanel );
 	m_WebView->Focus();
 }
 
 void VAwesomium::OnMousePressed(MouseCode code)
 {
-	MouseButtonHelper(code, false);
+	MouseButtonHelper( code, false );
 }
 
 void VAwesomium::OnMouseReleased(MouseCode code)
 {
-	MouseButtonHelper(code, true);
+	MouseButtonHelper( code, true );
 }
 
 void VAwesomium::MouseButtonHelper(MouseCode code, bool isUp)
@@ -176,9 +207,9 @@ void VAwesomium::MouseButtonHelper(MouseCode code, bool isUp)
 	isUp ? m_WebView->InjectMouseUp(mouseButton) : m_WebView->InjectMouseDown(mouseButton);
 }
 
-void VAwesomium::OnMouseWheeled(int delta)
+void VAwesomium::OnMouseWheeled( int delta )
 {
-	m_WebView->InjectMouseWheel(delta * WHEEL_DELTA, 0);
+	m_WebView->InjectMouseWheel( delta * WHEEL_DELTA, 0 );
 }
 
 void VAwesomium::OnKeyTyped(wchar_t unichar)
@@ -212,15 +243,17 @@ void VAwesomium::OnKeyCodeReleased(KeyCode code)
 
 void VAwesomium::ResizeView()
 {
-	m_iNearestPowerWidth = NearestPowerOfTwo(GetWide());
-	m_iNearestPowerHeight = NearestPowerOfTwo(GetTall());
-	m_WebView->Resize(GetWide(), GetTall());
+	m_iNearestPowerWidth	= NearestPowerOfTwo( GetWide() );
+	m_iNearestPowerHeight	= NearestPowerOfTwo( GetTall() );
+
+	m_WebView->Resize( GetWide(), GetTall() );
 }
 
 void VAwesomium::OpenURL(const char *address)
 {
 	m_WebView->LoadURL(WebURL(WSLit("about:blank")));
 	m_WebView->LoadURL(WebURL(WSLit(address)));
+
 	ResizeView();
 }
 

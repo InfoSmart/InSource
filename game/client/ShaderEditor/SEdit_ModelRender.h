@@ -4,8 +4,6 @@
 #include "cbase.h"
 #include "ShaderEditor/ISEdit_ModelRender.h"
 
-#define SEDIT_USING_SWARM 1
-
 class C_BaseFlex_OverrideLod;
 
 class SEditModelRender : public ISEditModelRender, public CAutoGameSystemPerFrame

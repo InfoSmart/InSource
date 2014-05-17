@@ -23,10 +23,13 @@
 IMPLEMENT_CLIENTCLASS_DT( C_AP_PlayerInfected, DT_PlayerInfected, CAP_PlayerInfected )
 END_RECV_TABLE()
 
-//=========================================================
-// Constructor
-//=========================================================
-C_AP_PlayerInfected::C_AP_PlayerInfected()
+//====================================================================
+//====================================================================
+void C_AP_PlayerInfected::Spawn()
 {
-	::input->CAM_ToThirdPersonShoulder();
+	BaseClass::Spawn();
+
+	// Pasamos a tercera persona
+	if ( GetLocalPlayer() == this )
+		::input->CAM_ToThirdPersonShoulder();
 }

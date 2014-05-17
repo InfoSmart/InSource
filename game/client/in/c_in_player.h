@@ -1,4 +1,4 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #ifndef C_IN_PLAYER_H
 #define C_IN_PLAYER_H
@@ -15,6 +15,7 @@
 #include "flashlighteffect.h"
 
 #include "in_shareddefs.h"
+#include "in_player_inventory.h"
 
 //=========================================================
 // >> C_IN_Player
@@ -30,12 +31,27 @@ public:
 	C_IN_Player();
 	~C_IN_Player();
 
+	virtual bool IsInGround()
+	{
+		return (GetFlags() & FL_ONGROUND) ? true : false;
+	}
+
+	virtual bool IsGod() 
+	{ 
+		return (GetFlags() & FL_GODMODE) ? true : false; 
+	}
+
 	static C_IN_Player* GetLocalInPlayer();
 
 	// Principales
+	virtual void Spawn();
 	virtual void PreThink();
+	virtual void PostThink();
+	virtual bool Simulate();
 
 	// Utils
+	virtual void CreateAnimationState();
+
 	virtual bool IsPressingButton( int iButton );
 	virtual bool IsButtonPressed( int iButton );
 	virtual bool IsButtonReleased( int iButton );
@@ -50,8 +66,11 @@ public:
 
 	virtual const QAngle &EyeAngles();
 
+	virtual bool GetEntityEyesView( C_BaseAnimating *pEntity, Vector& eyeOrigin, QAngle& eyeAngles, int secureDistance = 10000 );
 	virtual void CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
 	virtual void InitializePoseParams();
+
+	virtual void DoPostProcessingEffects( PostProcessParameters_t &params );
 
 	// Animaciones y Modelos
 	virtual CStudioHdr *OnNewModel();
@@ -69,36 +88,66 @@ public:
 	virtual ShadowType_t ShadowCastType();
 	virtual bool ShouldReceiveProjectedTextures( int iFlags );
 
-	virtual void AddEntity();
+	virtual void UpdatePlayerFlashlight();
 	virtual void UpdateFlashlight();
 	virtual void ReleaseFlashlight();
 
+	virtual void GetFlashlightPosition( C_IN_Player *pPlayer, Vector &vecForward, Vector &vecRight, Vector &vecUp );
+	virtual const char *GetFlashlightTextureName() const;
+	virtual float GetFlashlightFOV() const;
+	virtual float GetFlashlightFarZ();
+	virtual float GetFlashlightLinearAtten();
+	
 	virtual bool CreateLightEffects();
 
 	// Armas
 	virtual CBaseInWeapon *GetActiveInWeapon( ) const; // SHARED!
 	virtual void OnFireBullets( int iBullets ); // SHARED!
 
-	// Salud/Daño
-	virtual bool IsDejected() { return m_bDejected; }
+	// Incapacitación
+	virtual bool IsIncap() { return m_bIncap; }
+	virtual bool IsClimbingIncap() { return m_bClimbingToHell; }
+	virtual bool IsWaitingGroundDeath() { return m_bWaitingGroundDeath; }
+
+	virtual float GetHelpProgress() { return m_flHelpProgress; }
+	virtual float GetClimbingHold() { return m_flClimbingHold; }
+
 	virtual bool InCombat() { return m_bInCombat; }
+
+	// Inventario
+	virtual C_PlayerInventory *GetInventory();
+
+	// Comandos y Cheats
+	virtual bool CreateMove( float flInputSampleTime, CUserCmd *pCmd );
 	
 protected:
 	CInPlayerAnimState *m_nAnimState;
 	EHANDLE	m_nRagdoll;
+	EHANDLE m_nPlayerInventory;
 
-	QAngle	m_angEyeAngles;
-	CInterpolatedVar< QAngle >	iv_angEyeAngles;
+	QAngle m_angEyeAngles;
+	CInterpolatedVar< QAngle > iv_angEyeAngles;
 
-	bool m_bDejected;
+	int m_iEyeAngleZ;
 	bool m_bInCombat;
+	bool m_bMovementDisabled;
+
+	bool m_bIncap;
+	bool m_bClimbingToHell;
+	bool m_bWaitingGroundDeath;
+
+	int m_iTimesDejected;
+	float m_flHelpProgress;
+	float m_flClimbingHold;
+
+	int m_afButtonDisabled;
 
 	// Linternas
 	CFlashlightEffect *m_nFlashlight;
 	CFlashlightEffect *m_nThirdFlashlight;
 	CFlashlightEffect *m_hFireEffect;
 
-	Beam_t	*m_nFlashlightBeam;
+	Beam_t *m_nFlashlightBeam;
 
 	// Poses
 	int iHeadYawPoseParam;
@@ -110,6 +159,8 @@ protected:
 	float flLastBodyYaw;
 	float flCurrentHeadYaw;
 	float flCurrentHeadPitch;
+
+	friend class CInPlayerAnimState;
 
 private:
 	C_IN_Player( const C_IN_Player & );

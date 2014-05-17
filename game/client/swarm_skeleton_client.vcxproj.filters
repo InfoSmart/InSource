@@ -40,44 +40,14 @@
     <Filter Include="game_controls Header Files">
       <UniqueIdentifier>{e4e2865e-6f20-4a28-b430-978c101ca2d3}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\deferred">
-      <UniqueIdentifier>{a4019c5d-4fa5-41e2-bc7e-2450afa2154e}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\deferred\shared">
-      <UniqueIdentifier>{e579af3f-ade6-474f-a219-fa0f18c51bbd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\deferred\interface">
-      <UniqueIdentifier>{237f0174-8feb-4976-a6e9-f9a4c8024442}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\ShaderEditor">
       <UniqueIdentifier>{e8644816-4d48-4ca5-9171-3d70cd2a27da}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\deferred\vgui">
-      <UniqueIdentifier>{da4b7191-901f-44bf-9434-6ee64b1b7711}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\SDK">
       <UniqueIdentifier>{4af80b45-705e-489c-ac39-a1732fe090a2}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\SDK\vgui">
       <UniqueIdentifier>{e4e1c0eb-8ecc-4602-a6cc-6f9e4b83aa48}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\SDK\GameUI - Embedded">
-      <UniqueIdentifier>{340e0c6d-8228-44ac-bbf8-8bfc79c8c535}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\SDK\GameUI - Embedded\Base GameUI">
-      <UniqueIdentifier>{183ae2e8-216d-4676-a163-00ba3b48b0a0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\SDK\GameUI - Embedded\Base GameUI\Headers">
-      <UniqueIdentifier>{0f5ad507-ad86-4895-9392-efe8beed39d0}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\SDK\GameUI - Embedded\External Stuff">
-      <UniqueIdentifier>{9b1a461a-d53f-4722-857b-6515a6dc2ea3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\SDK\GameUI - Embedded\SDK GameUI">
-      <UniqueIdentifier>{8eeaa6e4-3fe4-4a16-9788-df67c33abd7f}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\SDK\GameUI - Embedded\SDK GameUI\headers">
-      <UniqueIdentifier>{1d683480-93d1-43aa-a426-ee112e26e9a8}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\SDK\Shared">
       <UniqueIdentifier>{79867f6d-65d3-41bf-a0f1-3a66e9309b86}</UniqueIdentifier>
@@ -96,6 +66,30 @@
     </Filter>
     <Filter Include="Source Files\Apocalypse\Shared\Reglas del Juego">
       <UniqueIdentifier>{a58420fd-f481-4eb7-be64-0cfdc1f9512b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\VGUI">
+      <UniqueIdentifier>{f978ef00-df80-4d91-97a7-606ca76cfb48}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\GameUI">
+      <UniqueIdentifier>{1857b075-8720-4977-b5b0-3a51b997e245}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Old GameUI">
+      <UniqueIdentifier>{47ca2087-8fc2-44ad-a136-9948d193e36b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\HUD">
+      <UniqueIdentifier>{d6d73c47-175d-4d2a-8db3-0475bde64a46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Shared\Players">
+      <UniqueIdentifier>{5ec3226d-b8f4-45be-971b-2a7d5f600dde}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Shared\Weapons">
+      <UniqueIdentifier>{f1b42ef0-e595-40bf-bbc2-fc850225ef22}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Apocalypse\HUD">
+      <UniqueIdentifier>{0714960e-6d6b-4fd4-bb4c-04b21042776b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Shared\Items">
+      <UniqueIdentifier>{b78c00db-8e13-44ac-bf74-e7b00a8acce9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1454,9 +1448,6 @@
     <ClCompile Include="sdk\vgui\sdk_logo_panel.cpp">
       <Filter>Source Files\SDK\vgui</Filter>
     </ClCompile>
-    <ClCompile Include="sdk\vgui_rootpanel_sdk.cpp">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
     <ClCompile Include="sdk\sdk_prediction.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
@@ -1469,332 +1460,17 @@
     <ClCompile Include="sdk\c_sdk_lesson.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
-    <ClCompile Include="sdk\gameui\backgroundmenubutton.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\basesavegamedialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\bitmapimagepanel.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\commandcheckbutton.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\contentcontroldialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\createmultiplayergamebotpage.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\createmultiplayergamedialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\createmultiplayergamegameplaypage.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\createmultiplayergameserverpage.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\customtabexplanationdialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\cvarnegatecheckbutton.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\cvarslider.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\cvartextentry.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\cvartogglecheckbutton.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\gameconsole.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\gameconsoledialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\gameui_interface.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\gameui_util.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\keytogglecheckbutton.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\labeledcommandcombobox.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\loadingdialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\loadingtippanel.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\logofile.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\modinfo.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\mousemessageforwardingpanel.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\multiplayeradvanceddialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionsdialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionssubaudio.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionssubdifficulty.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionssubgame.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionssubkeyboard.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionssubmouse.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionssubmultiplayer.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionssubportal.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionssubvideo.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\optionssubvoice.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\panellistpanel.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\playerlistdialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\rungameengine.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\scriptobject.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sys_utils.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\textentrybox.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\urlbutton.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\vcontrolslistpanel.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\vguisystemmoduleloader.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\common\language.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\External Stuff</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\basemodpanel.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\basemodframe.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
     <ClCompile Include="sdk\vgui\nb_header_footer.cpp">
       <Filter>Source Files\SDK\vgui</Filter>
     </ClCompile>
     <ClCompile Include="sdk\vgui\nb_button.cpp">
       <Filter>Source Files\SDK\vgui</Filter>
     </ClCompile>
-    <ClCompile Include="sdk\vgui\sdk_hud_chat.cpp">
-      <Filter>Source Files\SDK\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\uiavatarimage.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\uigamedata.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\uigamedata_invite.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\uigamedata_storage.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vachievements.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vaddonassociation.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vaddons.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vattractscreen.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vaudio.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vaudiovideo.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vcloud.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vdownloads.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vdropdownmenu.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vflyoutmenu.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vfooterpanel.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vgenericconfirmation.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vgenericpanellist.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vgenericwaitscreen.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vgetlegacydata.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vhybridbutton.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vingamekickplayerlist.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vingamemainmenu.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vkeyboard.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vkeyboardmouse.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vloadingprogress.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vmainmenu.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vmenubackground.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vmultiplayer.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\voptions.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vpasswordentry.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vquickjoin.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vsignindialog.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vslidercontrol.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vsteamcloudconfirmation.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vtransitionscreen.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vvideo.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vvoteoptions.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vfoundgames.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vjukebox.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vspinnercontrol.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vdownloadcampaign.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vgamesettings.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
     <ClCompile Include="sdk\c_sdk_jukebox.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
     <ClCompile Include="sdk\vgui\sdk_vgui_music_importer.cpp">
       <Filter>Source Files\SDK\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vfoundgroupgames.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vfoundpublicgames.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vcontrolleroptions.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vcontrolleroptionsbuttons.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vcontrolleroptionssticks.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vleaderboard.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vquickjoingroups.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\gamemodes.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vcustomcampaigns.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vingamechapterselect.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vingamedifficultyselect.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vgamelobby.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vgamelobbychat.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\gameui\sdk\vgameoptions.cpp">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI</Filter>
     </ClCompile>
     <ClCompile Include="sdk\sdk_fx_impacts.cpp">
       <Filter>Source Files\SDK</Filter>
@@ -1807,15 +1483,6 @@
     </ClCompile>
     <ClCompile Include="sdk\sdk_fx_weaponfx.cpp">
       <Filter>Source Files\SDK\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\vgui\sdk_hud_ammo.cpp">
-      <Filter>Source Files\SDK\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\vgui\sdk_hud_health.cpp">
-      <Filter>Source Files\SDK\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="sdk\vgui\sdk_hud_weaponselection.cpp">
-      <Filter>Source Files\SDK\vgui</Filter>
     </ClCompile>
     <ClCompile Include="hud_weapon.cpp">
       <Filter>Source Files</Filter>
@@ -1832,83 +1499,11 @@
     <ClCompile Include="sdk\vgui\nb_select_level_panel.cpp">
       <Filter>Source Files\SDK\vgui</Filter>
     </ClCompile>
-    <ClCompile Include="deferred\viewrender_deferred.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\deferred\CDefLight.cpp">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\cdeferred_manager_client.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\deferred\deferred_shared_common.cpp">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\deferred_client_common.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\deferred\CDefLightContainer.cpp">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\clight_manager.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\def_light_t.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\deferred_rt.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\IDeferredExtClient.cpp">
-      <Filter>Source Files\deferred\interface</Filter>
-    </ClCompile>
     <ClCompile Include="ShaderEditor\SEdit_ModelRender.cpp">
       <Filter>Source Files\ShaderEditor</Filter>
     </ClCompile>
     <ClCompile Include="ShaderEditor\ShaderEditorSystem.cpp">
       <Filter>Source Files\ShaderEditor</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\deferred\CDefLightGlobal.cpp">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\cascade_t.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\vgui\vgui_projectable.cpp">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\vgui\vgui_marquee.cpp">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\vgui\projectable_factory.cpp">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\DefCookieTexture.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\DefCookieProjectable.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\clight_editor.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\vgui\vgui_editor_root.cpp">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\vgui\vgui_editor_controls.cpp">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\vgui\vgui_editor_props.cpp">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\vgui\vgui_particles.cpp">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\materialsystem_passthru.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\flashlighteffect_deferred.cpp">
-      <Filter>Source Files\deferred</Filter>
     </ClCompile>
     <ClCompile Include="in\c_in_player.cpp">
       <Filter>Source Files\InSource</Filter>
@@ -1931,12 +1526,6 @@
     <ClCompile Include="..\shared\in\in_gamerules.cpp">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\in\in_player_shared.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\in_playeranimstate.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\in\in_team.cpp">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClCompile>
@@ -1944,15 +1533,6 @@
       <Filter>Source Files\InSource\Shared</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\in\multiplayer_animstate.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\weapon_basemachinegun.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\weapon_inbase.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\weapons_macro.cpp">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\ap\ap_survival_gamerules.cpp">
@@ -1963,6 +1543,87 @@
     </ClCompile>
     <ClCompile Include="..\shared\ap\ap_gamerules.cpp">
       <Filter>Source Files\Apocalypse\Shared\Reglas del Juego</Filter>
+    </ClCompile>
+    <ClCompile Include="in\VAwesomium.cpp">
+      <Filter>Source Files\InSource\VGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\vgui_rootpanel.cpp">
+      <Filter>Source Files\InSource\VGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui\gameconsole.cpp">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui\gameconsoledialog.cpp">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui\gameui_util.cpp">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui\modinfo.cpp">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui\sys_utils.cpp">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui\vguisystemmoduleloader.cpp">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\vgui_basehtml.cpp">
+      <Filter>Source Files\InSource\VGUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui_interface.cpp">
+      <Filter>Source Files\InSource</Filter>
+    </ClCompile>
+    <ClCompile Include="in\in_hud_chat.cpp">
+      <Filter>Source Files\InSource\HUD</Filter>
+    </ClCompile>
+    <ClCompile Include="in\in_hud_weaponselection.cpp">
+      <Filter>Source Files\InSource\HUD</Filter>
+    </ClCompile>
+    <ClCompile Include="ap\c_ap_player.cpp">
+      <Filter>Source Files\Apocalypse</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\ap\ap_playeranimstate.cpp">
+      <Filter>Source Files\Apocalypse\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\layersound.cpp">
+      <Filter>Source Files\InSource\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="in\layersound_manager.cpp">
+      <Filter>Source Files\InSource</Filter>
+    </ClCompile>
+    <ClCompile Include="in\in_view_scene.cpp">
+      <Filter>Source Files\InSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\in_player_shared.cpp">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\in_playeranimstate.cpp">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\in_player_inventory.cpp">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\weapon_basemachinegun.cpp">
+      <Filter>Source Files\InSource\Shared\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\weapon_inbase.cpp">
+      <Filter>Source Files\InSource\Shared\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\weapons_macro.cpp">
+      <Filter>Source Files\InSource\Shared\Weapons</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui\in_gameui_hud.cpp">
+      <Filter>Source Files\InSource\GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui\in_gameui_menu.cpp">
+      <Filter>Source Files\InSource\GameUI</Filter>
+    </ClCompile>
+    <ClCompile Include="in\ap_gameui_hud.cpp">
+      <Filter>Source Files\Apocalypse\HUD</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\item_object.cpp">
+      <Filter>Source Files\InSource\Shared\Items</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -3775,329 +3436,17 @@
     <ClInclude Include="sdk\sdk_input.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\basemodframe.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\basemodpanel.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\basemodui.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
     <ClInclude Include="sdk\vgui\nb_header_footer.h">
       <Filter>Source Files\SDK\vgui</Filter>
     </ClInclude>
     <ClInclude Include="sdk\vgui\nb_button.h">
       <Filter>Source Files\SDK\vgui</Filter>
     </ClInclude>
-    <ClInclude Include="sdk\vgui\sdk_hud_chat.h">
-      <Filter>Source Files\SDK\vgui</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\backgroundmenubutton.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\basepanel.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\basesavegamedialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\bitmapimagepanel.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\cdkeyentrydialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\commandcheckbutton.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\contentcontroldialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\createmultiplayergamebotpage.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\createmultiplayergamedialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\createmultiplayergamegameplaypage.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\createmultiplayergameserverpage.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\customtabexplanationdialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\cvarnegatecheckbutton.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\cvarslider.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\cvartextentry.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\cvartogglecheckbutton.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\engineinterface.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\gameconsole.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\gameconsoledialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\gameui_interface.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\gameui_util.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\keytogglecheckbutton.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\labeledcommandcombobox.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\loadingdialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\loadingtippanel.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\modinfo.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\mousemessageforwardingpanel.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\multiplayeradvanceddialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionsdialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionssubaudio.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionssubdifficulty.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionssubgame.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionssubkeyboard.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionssubmouse.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionssubmultiplayer.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionssubportal.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionssubvideo.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\optionssubvoice.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\panellistpanel.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\playerlistdialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\rungameengine.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\scriptobject.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sys_utils.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\textentrybox.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\urlbutton.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\vcontrolslistpanel.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\vguisystemmoduleloader.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\Base GameUI\Headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\uiavatarimage.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\uigamedata.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vachievements.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vaddonassociation.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vaddons.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vattractscreen.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vaudio.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vaudiovideo.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vcloud.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vdownloads.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vdropdownmenu.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vflyoutmenu.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vfooterpanel.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vgenericconfirmation.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vgenericpanellist.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vgenericwaitscreen.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vgetlegacydata.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vhybridbutton.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vingamekickplayerlist.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vingamemainmenu.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vkeyboard.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vkeyboardmouse.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vloadingprogress.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vmainmenu.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vmultiplayer.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\voptions.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vpasswordentry.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vquickjoin.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vsignindialog.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vslidercontrol.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vsteamcloudconfirmation.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vtransitionscreen.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vvideo.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vvoteoptions.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vfoundgames.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vspinnercontrol.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vjukebox.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vdownloadcampaign.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vgamesettings.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
     <ClInclude Include="sdk\c_sdk_jukebox.h">
       <Filter>Source Files\SDK</Filter>
     </ClInclude>
     <ClInclude Include="sdk\vgui\sdk_vgui_music_importer.h">
       <Filter>Source Files\SDK\vgui</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vfoundgroupgames.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vfoundpublicgames.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vcontrolleroptions.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vcontrolleroptionsbuttons.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vcontrolleroptionssticks.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vleaderboard.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vquickjoingroups.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\gamemodes.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vcustomcampaigns.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vingamechapterselect.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vingamedifficultyselect.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vgamelobby.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vgamelobbychat.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
-    </ClInclude>
-    <ClInclude Include="sdk\gameui\sdk\vgameoptions.h">
-      <Filter>Source Files\SDK\GameUI - Embedded\SDK GameUI\headers</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\sdk\sdk_movedata.h">
       <Filter>Source Files\SDK\Shared</Filter>
@@ -4114,39 +3463,6 @@
     <ClInclude Include="sdk\vgui\nb_select_level_panel.h">
       <Filter>Source Files\SDK\vgui</Filter>
     </ClInclude>
-    <ClInclude Include="deferred\viewrender_deferred.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\deferred_client_common.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\deferred\CDefLight.h">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\deferred\deferred_shared_common.h">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\cdeferred_manager_client.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\deferred\CDefLightContainer.h">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\clight_manager.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\def_light_t.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\deferred_rt.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\materialsystem\swarmshaders\IDeferredExt.h">
-      <Filter>Source Files\deferred\interface</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\materialsystem\swarmshaders\deferred_global_common.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
     <ClInclude Include="ShaderEditor\ISEdit_ModelRender.h">
       <Filter>Source Files\ShaderEditor</Filter>
     </ClInclude>
@@ -4158,51 +3474,6 @@
     </ClInclude>
     <ClInclude Include="ShaderEditor\ShaderEditorSystem.h">
       <Filter>Source Files\ShaderEditor</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\deferred\CDefLightGlobal.h">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\cascade_t.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\vgui\vgui_projectable.h">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\vgui\vgui_deferred.h">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\vgui\vgui_marquee.h">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\vgui\projectable_factory.h">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\DefCookieTexture.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\DefCookieProjectable.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\IDefCookie.h">
-      <Filter>Source Files\deferred\interface</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\clight_editor.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\vgui\vgui_editor_controls.h">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\vgui\vgui_editor_props.h">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\vgui\vgui_particles.h">
-      <Filter>Source Files\deferred\vgui</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\materialsystem_passthru.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\flashlighteffect_deferred.h">
-      <Filter>Source Files\deferred</Filter>
     </ClInclude>
     <ClInclude Include="in\c_in_player.h">
       <Filter>Source Files\InSource</Filter>
@@ -4222,9 +3493,6 @@
     <ClInclude Include="..\shared\in\in_gamerules.h">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\in\in_playeranimstate.h">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\in\in_shareddefs.h">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClInclude>
@@ -4240,12 +3508,6 @@
     <ClInclude Include="..\shared\in\multiplayer_animstate.h">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\in\weapon_basemachinegun.h">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\in\weapon_inbase.h">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\ap\ap_survival_gamerules.h">
       <Filter>Source Files\Apocalypse\Shared\Reglas del Juego</Filter>
     </ClInclude>
@@ -4254,6 +3516,78 @@
     </ClInclude>
     <ClInclude Include="..\shared\ap\ap_gamerules.h">
       <Filter>Source Files\Apocalypse\Shared\Reglas del Juego</Filter>
+    </ClInclude>
+    <ClInclude Include="in\VAwesomium.h">
+      <Filter>Source Files\InSource\VGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui\engineinterface.h">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui\gameconsole.h">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui\gameconsoledialog.h">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui\gameui_util.h">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui\modinfo.h">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui\sys_utils.h">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui\vguisystemmoduleloader.h">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\vgui_basehtml.h">
+      <Filter>Source Files\InSource\VGUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui_interface.h">
+      <Filter>Source Files\InSource</Filter>
+    </ClInclude>
+    <ClInclude Include="in\in_hud_chat.h">
+      <Filter>Source Files\InSource\HUD</Filter>
+    </ClInclude>
+    <ClInclude Include="ap\c_ap_player.h">
+      <Filter>Source Files\Apocalypse</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ap\ap_playeranimstate.h">
+      <Filter>Source Files\Apocalypse\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\layersound.h">
+      <Filter>Source Files\InSource\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="in\layersound_manager.h">
+      <Filter>Source Files\InSource</Filter>
+    </ClInclude>
+    <ClInclude Include="in\in_view_scene.h">
+      <Filter>Source Files\InSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\in_playeranimstate.h">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\in_player_inventory.h">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\weapon_basemachinegun.h">
+      <Filter>Source Files\InSource\Shared\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\weapon_inbase.h">
+      <Filter>Source Files\InSource\Shared\Weapons</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui\in_gameui_hud.h">
+      <Filter>Source Files\InSource\GameUI</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui\in_gameui_menu.h">
+      <Filter>Source Files\InSource\GameUI</Filter>
+    </ClInclude>
+    <ClInclude Include="ap\ap_gameui_hud.h">
+      <Filter>Source Files\Apocalypse\HUD</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\item_object.h">
+      <Filter>Source Files\InSource\Shared\Items</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

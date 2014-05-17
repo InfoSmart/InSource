@@ -16,8 +16,8 @@ extern ConVar cl_sunlight_ortho_size;
 extern ConVar cl_sunlight_depthbias;
 
 ConVar cl_globallight_freeze( "cl_globallight_freeze", "0" );
-ConVar cl_globallight_xoffset( "cl_globallight_xoffset", "-800" );
-ConVar cl_globallight_yoffset( "cl_globallight_yoffset", "1600" );
+ConVar cl_globallight_xoffset( "cl_globallight_xoffset", "0" );
+ConVar cl_globallight_yoffset( "cl_globallight_yoffset", "0" );
 
 //------------------------------------------------------------------------------
 // Purpose : Sunlights shadow control entity

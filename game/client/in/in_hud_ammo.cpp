@@ -1,8 +1,4 @@
 //========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
-//
-// Purpose: 
-//
-//=============================================================================//
 
 #include "cbase.h"
 #include "hud.h"
@@ -18,62 +14,66 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-//-----------------------------------------------------------------------------
-// Purpose: Displays current ammunition level
-//-----------------------------------------------------------------------------
+//=========================================================
+// >> CHudAmmo
+// Muestra información de la munición del arma actual
+//=========================================================
 class CHudAmmo : public CHudNumericDisplay, public CHudElement
 {
+public:
 	DECLARE_CLASS_SIMPLE( CHudAmmo, CHudNumericDisplay );
 
-public:
 	CHudAmmo( const char *pElementName );
-	void Init( void );
-	void VidInit( void );
-	void Reset();
 
-	void SetAmmo(int ammo, bool playAnimation);
-	void SetAmmo2(int ammo2, bool playAnimation);
+	virtual void Init();
+	virtual void Reset();
 
-protected:
+	virtual void SetAmmo( int iAmmo, bool playAnimation );
+	virtual void SetAmmo2( int iAmmo2, bool playAnimation );
+
 	virtual void OnThink();
 
-	void UpdateAmmoDisplays();
-	void UpdatePlayerAmmo( C_BasePlayer *player );
+	virtual void UpdateAmmoDisplays();
+	virtual void UpdatePlayerAmmo( C_BasePlayer *player );
 
-private:
+protected:
 	CHandle< C_BaseCombatWeapon > m_hCurrentActiveWeapon;
 	CHandle< C_BaseEntity > m_hCurrentVehicle;
-	int		m_iAmmo;
-	int		m_iAmmo2;
+
+	int m_iAmmo;
+	int m_iAmmo2;
 };
 
 DECLARE_HUDELEMENT( CHudAmmo );
 
-//-----------------------------------------------------------------------------
-// Purpose: Constructor
-//-----------------------------------------------------------------------------
-CHudAmmo::CHudAmmo( const char *pElementName ) : BaseClass(NULL, "HudAmmo"), CHudElement( pElementName )
+//=========================================================
+// Constructor
+//=========================================================
+CHudAmmo::CHudAmmo( const char *pElementName ) : BaseClass( NULL, "HudAmmo" ), CHudElement( pElementName )
 {
 	SetHiddenBits( HIDEHUD_HEALTH | HIDEHUD_PLAYERDEAD | HIDEHUD_NEEDSUIT | HIDEHUD_WEAPONSELECTION );
 
+	// Establecemos información predeterminada
 	hudlcd->SetGlobalStat( "(ammo_primary)", "0" );
 	hudlcd->SetGlobalStat( "(ammo_secondary)", "0" );
 	hudlcd->SetGlobalStat( "(weapon_print_name)", "" );
 	hudlcd->SetGlobalStat( "(weapon_name)", "" );
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CHudAmmo::Init( void )
+//=========================================================
+// Inicia el elemento
+//=========================================================
+void CHudAmmo::Init()
 {
 	m_iAmmo		= -1;
 	m_iAmmo2	= -1;
 
-	wchar_t *tempString = g_pVGuiLocalize->Find("#Valve_Hud_AMMO");
-	if (tempString)
+	wchar_t *tmpString = g_pVGuiLocalize->Find("#Valve_Hud_AMMO");
+
+	// Munición
+	if ( tmpString )
 	{
-		SetLabelText(tempString);
+		SetLabelText( tmpString );
 	}
 	else
 	{
@@ -81,98 +81,100 @@ void CHudAmmo::Init( void )
 	}
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: 
-//-----------------------------------------------------------------------------
-void CHudAmmo::VidInit( void )
-{
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Resets hud after save/restore
-//-----------------------------------------------------------------------------
+//=========================================================
+// Reinicia el HUD después de guardar/restaurar una partida
+//=========================================================
 void CHudAmmo::Reset()
 {
 	BaseClass::Reset();
 
-	m_hCurrentActiveWeapon = NULL;
-	m_hCurrentVehicle = NULL;
-	m_iAmmo = 0;
-	m_iAmmo2 = 0;
+	m_hCurrentActiveWeapon	= NULL;
+	m_hCurrentVehicle		= NULL;
+
+	m_iAmmo		= 0;
+	m_iAmmo2	= 0;
 
 	UpdateAmmoDisplays();
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: called every frame to get ammo info from the weapon
-//-----------------------------------------------------------------------------
-void CHudAmmo::UpdatePlayerAmmo( C_BasePlayer *player )
+
+//=========================================================
+// Actualiza la cantidad de munición del Jugador
+//=========================================================
+void CHudAmmo::UpdatePlayerAmmo( C_BasePlayer *pPlayer )
 {
 	// Clear out the vehicle entity
 	m_hCurrentVehicle = NULL;
 
-	C_BaseCombatWeapon *wpn = player ? player->GetActiveWeapon() : NULL;
-
-	hudlcd->SetGlobalStat( "(weapon_print_name)", wpn ? wpn->GetPrintName() : " " );
-	hudlcd->SetGlobalStat( "(weapon_name)", wpn ? wpn->GetName() : " " );
-
-	if ( !wpn || !player || !wpn->UsesPrimaryAmmo() )
+	// Obtenemos el arma actual del Jugador
+	C_BaseCombatWeapon *pWeapon = ( pPlayer ) ? pPlayer->GetActiveWeapon() : NULL;
+	
+	// No hay un Jugador, no tiene un arma o esta no usa munición primaria
+	if ( !pPlayer || !pWeapon || !pWeapon->UsesPrimaryAmmo() )
 	{
 		hudlcd->SetGlobalStat( "(ammo_primary)", "n/a" );
 		hudlcd->SetGlobalStat( "(ammo_secondary)", "n/a" );
 
-		SetPaintEnabled(false);
-		SetPaintBackgroundEnabled(false);
+		// Ocultamos el elemento
+		SetPaintEnabled( false );
+		SetPaintBackgroundEnabled( false );
+
 		return;
 	}
 
-	SetPaintEnabled(true);
-	SetPaintBackgroundEnabled(true);
+	// Nombre del arma
+	hudlcd->SetGlobalStat( "(weapon_print_name)", pWeapon->GetPrintName() );
+	hudlcd->SetGlobalStat( "(weapon_name)", pWeapon->GetName() );
 
-	// get the ammo in our clip
-	int ammo1 = wpn->Clip1();
-	int ammo2;
-	if (ammo1 < 0)
+	// Visible
+	SetPaintEnabled( true );
+	SetPaintBackgroundEnabled( true );
+
+	// Munición del arma
+	int ammo1 = pWeapon->Clip1();
+	int ammo2 = 0;
+
+	if ( ammo1 < 0 )
 	{
 		// we don't use clip ammo, just use the total ammo count
-		ammo1 = player->GetAmmoCount(wpn->GetPrimaryAmmoType());
+		ammo1 = pPlayer->GetAmmoCount( pWeapon->GetPrimaryAmmoType() );
 		ammo2 = 0;
 	}
 	else
 	{
 		// we use clip ammo, so the second ammo is the total ammo
-		ammo2 = player->GetAmmoCount(wpn->GetPrimaryAmmoType());
+		ammo2 = pPlayer->GetAmmoCount( pWeapon->GetPrimaryAmmoType() );
 	}
 
 	hudlcd->SetGlobalStat( "(ammo_primary)", VarArgs( "%d", ammo1 ) );
 	hudlcd->SetGlobalStat( "(ammo_secondary)", VarArgs( "%d", ammo2 ) );
 
-	if (wpn == m_hCurrentActiveWeapon)
+	// Es la misma arma que antes, solo actualizamos el contador
+	if ( pWeapon == m_hCurrentActiveWeapon )
 	{
-		// same weapon, just update counts
-		SetAmmo(ammo1, true);
-		SetAmmo2(ammo2, true);
+		SetAmmo( ammo1, true );
+		SetAmmo2( ammo2, true );
 	}
+
+	// Es una nueva arma, cambiamos sin animación
 	else
 	{
-		// diferent weapon, change without triggering
-		SetAmmo(ammo1, false);
-		SetAmmo2(ammo2, false);
+		SetAmmo( ammo1, false );
+		SetAmmo2( ammo2, false );
 
-		// update whether or not we show the total ammo display
-		if (wpn->UsesClipsForAmmo1())
+		if ( pWeapon->UsesClipsForAmmo1() )
 		{
-			SetShouldDisplaySecondaryValue(true);
+			SetShouldDisplaySecondaryValue( true );
 			GetClientMode()->GetViewportAnimationController()->StartAnimationSequence("WeaponUsesClips");
 		}
 		else
 		{
 			GetClientMode()->GetViewportAnimationController()->StartAnimationSequence("WeaponDoesNotUseClips");
-			SetShouldDisplaySecondaryValue(false);
+			SetShouldDisplaySecondaryValue( false );
 		}
 
 		GetClientMode()->GetViewportAnimationController()->StartAnimationSequence("WeaponChanged");
-		m_hCurrentActiveWeapon = wpn;
+		m_hCurrentActiveWeapon = pWeapon;
 	}
 }
 
@@ -237,83 +239,91 @@ void CHudAmmo::UpdateVehicleAmmo( C_BasePlayer *player, IClientVehicle *pVehicle
 }
 */
 
-//-----------------------------------------------------------------------------
-// Purpose: called every frame to get ammo info from the weapon
-//-----------------------------------------------------------------------------
+//=========================================================
+// Pensamiento: Bucle de ejecución de tareas
+//=========================================================
 void CHudAmmo::OnThink()
 {
 	UpdateAmmoDisplays();
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: updates the ammo display counts
-//-----------------------------------------------------------------------------
+//=========================================================
+// Actualiza el contador con la información más reciente
+//=========================================================
 void CHudAmmo::UpdateAmmoDisplays()
 {
-	C_BasePlayer *player = C_BasePlayer::GetLocalPlayer();
-	
-	UpdatePlayerAmmo( player );
+	C_BasePlayer *pPlayer = C_BasePlayer::GetLocalPlayer();
+	UpdatePlayerAmmo( pPlayer );
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: Updates ammo display
-//-----------------------------------------------------------------------------
-void CHudAmmo::SetAmmo(int ammo, bool playAnimation)
+//=========================================================
+// Actualiza el contador de munición primaria
+//=========================================================
+void CHudAmmo::SetAmmo( int iAmmo, bool playAnimation )
 {
-	if (ammo != m_iAmmo)
+	// Ha cambiado
+	if ( iAmmo != m_iAmmo )
 	{
-		if (ammo == 0)
+		// Sin munición
+		if ( iAmmo <= 0 )
 		{
 			GetClientMode()->GetViewportAnimationController()->StartAnimationSequence("AmmoEmpty");
 		}
-		else if (ammo < m_iAmmo)
+
+		// Hemos gastado munición
+		else if ( iAmmo < m_iAmmo )
 		{
-			// ammo has decreased
 			GetClientMode()->GetViewportAnimationController()->StartAnimationSequence("AmmoDecreased");
 		}
+
+		// Hemos obtenido munición
 		else
 		{
-			// ammunition has increased
 			GetClientMode()->GetViewportAnimationController()->StartAnimationSequence("AmmoIncreased");
 		}
 
-		m_iAmmo = ammo;
+		m_iAmmo = iAmmo;
 	}
 
-	SetDisplayValue(ammo);
+	SetDisplayValue( iAmmo );
 }
 
-//-----------------------------------------------------------------------------
-// Purpose: Updates 2nd ammo display
-//-----------------------------------------------------------------------------
-void CHudAmmo::SetAmmo2(int ammo2, bool playAnimation)
+//=========================================================
+// Actualiza el contador de munición total
+//=========================================================
+void CHudAmmo::SetAmmo2( int iAmmo, bool playAnimation )
 {
-	if (ammo2 != m_iAmmo2)
+	// Ha cambiado
+	if ( iAmmo != m_iAmmo2 )
 	{
-		if (ammo2 == 0)
+		// Sin munición
+		if ( iAmmo <= 0 )
 		{
 			GetClientMode()->GetViewportAnimationController()->StartAnimationSequence("Ammo2Empty");
 		}
-		else if (ammo2 < m_iAmmo2)
+
+		// Hemos gastado munición
+		else if ( iAmmo < m_iAmmo )
 		{
-			// ammo has decreased
 			GetClientMode()->GetViewportAnimationController()->StartAnimationSequence("Ammo2Decreased");
 		}
+
+		// Hemos obtenido munición
 		else
 		{
-			// ammunition has increased
 			GetClientMode()->GetViewportAnimationController()->StartAnimationSequence("Ammo2Increased");
 		}
 
-		m_iAmmo2 = ammo2;
+		m_iAmmo2 = iAmmo;
 	}
 
-	SetSecondaryValue(ammo2);
+	SetSecondaryValue( iAmmo );
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: Displays the secondary ammunition level
 //-----------------------------------------------------------------------------
+/*
 class CHudSecondaryAmmo : public CHudNumericDisplay, public CHudElement
 {
 	DECLARE_CLASS_SIMPLE( CHudSecondaryAmmo, CHudNumericDisplay );
@@ -423,4 +433,4 @@ private:
 };
 
 DECLARE_HUDELEMENT( CHudSecondaryAmmo );
-
+*/

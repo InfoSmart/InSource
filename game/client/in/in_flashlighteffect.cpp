@@ -39,9 +39,6 @@ static ConVar r_flashlightnearoffsetscale( "r_flashlightnearoffsetscale", "1.0",
 static ConVar r_flashlighttracedistcutoff( "r_flashlighttracedistcutoff", "128" );
 static ConVar r_flashlightbacktraceoffset( "r_flashlightbacktraceoffset", "0.4", FCVAR_CHEAT );
 
-//static ConVar mat_slopescaledepthbias_shadowmap( "mat_slopescaledepthbias_shadowmap", "2", FCVAR_CHEAT );
-//static ConVar mat_depthbias_shadowmap(	"mat_depthbias_shadowmap", "0.00001", FCVAR_CHEAT  );
-
 //=========================================================
 // Callbacks
 //=========================================================
@@ -51,8 +48,8 @@ static ConVar r_flashlightbacktraceoffset( "r_flashlightbacktraceoffset", "0.4",
 //=========================================================
 CBaseFlashlightEffect::CBaseFlashlightEffect( int iIndex, const char *pTextureName )
 {
-	m_nFlashlightHandle = CLIENTSHADOW_INVALID_HANDLE;
-	m_iEntIndex			= iIndex;
+	m_nFlashlightHandle		= CLIENTSHADOW_INVALID_HANDLE;
+	m_iEntIndex				= iIndex;
 
 	m_bIsOn					= false;
 	m_flDie					= 0;
@@ -60,7 +57,7 @@ CBaseFlashlightEffect::CBaseFlashlightEffect( int iIndex, const char *pTextureNa
 	m_bCastsShadows			= true;
 
 	m_bMuzzleFlashEnabled		= false;
-	m_flMuzzleFlashBrightness	= 1.0f;
+	m_flMuzzleFlashBrightness	= 100.0f;
 
 	// Iniciamos la textura de la luz
 	UpdateFlashlightTexture( pTextureName );
@@ -150,19 +147,6 @@ void CBaseFlashlightEffect::Update( const Vector &vecPos, const Vector &vecForwa
 	if ( UpdateDefaultFlashlightState( state, vecPos, vecForward, vecRight, vecUp ) == false )
 		return;
 
-	state.m_fHorizontalFOVDegrees	= m_flFOV;
-	state.m_fVerticalFOVDegrees		= m_flFOV;
-
-	state.m_Color[0] = m_flBrightness;
-	state.m_Color[1] = m_flBrightness;
-	state.m_Color[2] = m_flBrightness;
-
-	if ( m_nFlashlightTexture )
-	{
-		state.m_pSpotlightTexture	= m_nFlashlightTexture;
-		state.m_pProjectedMaterial	= NULL;
-	}
-
 	UpdateLightProjection( state );
 
 #ifndef NO_TOOLFRAMEWORK
@@ -236,44 +220,39 @@ bool CBaseFlashlightEffect::UpdateDefaultFlashlightState( FlashlightState_t& sta
 	if ( ComputeLightPosAndOrientation( vecPos, vecForward, vecRight, vecUp, state.m_vecLightOrigin, state.m_quatOrientation ) == false )
 		return false;
 
-	state.m_fQuadraticAtten			= m_flQuadratic;
-	state.m_fLinearAtten			= m_flLinear;
-	state.m_fHorizontalFOVDegrees	= m_flFOV;
-	state.m_fVerticalFOVDegrees		= m_flFOV;
+	state.m_fQuadraticAtten		= m_flQuadratic;
+	state.m_fConstantAtten		= m_flConstant;
 
-	if ( m_bMuzzleFlashEnabled )
-	{
-		state.m_fHorizontalFOVDegrees = state.m_fVerticalFOVDegrees = r_flashlightmuzzleflashfov.GetFloat();
-	}
+	state.m_Color[0] = 1.0f;
+	state.m_Color[1] = 1.0f;
+	state.m_Color[2] = 1.0f;
+	state.m_Color[3] = m_flAlpha;
 
-	state.m_fConstantAtten	= m_flConstant;
-	state.m_Color[0]		= m_flBrightness;
-	state.m_Color[1]		= m_flBrightness;
-	state.m_Color[2]		= m_flBrightness;
-	state.m_Color[3]		= m_flAlpha;
-
-	// Optionally push near plane out so that we don't clip the world when the flashlight pulls back 
-	state.m_NearZ = m_flNear + r_flashlightnearoffsetscale.GetFloat() * m_flCurrentPullBackDist;
-
-	// Strictly speaking, these are different, but the game can treat them the same
-	state.m_FarZ = state.m_FarZAtten = m_flFar;
+	// Distancia
+	state.m_NearZ	= m_flNear + r_flashlightnearoffsetscale.GetFloat() * m_flCurrentPullBackDist;
+	state.m_FarZ	= state.m_FarZAtten = m_flFar;
 	
 	state.m_bEnableShadows			= ( m_bCastsShadows && r_flashlightdepthtexture.GetBool() );
 	state.m_flShadowMapResolution	= r_flashlightdepthres.GetInt();
 
+	// Es el efecto de un "MuzzleFlash"
 	if ( m_bMuzzleFlashEnabled )
 	{
-		state.m_pSpotlightTexture	= m_nMuzzleFlashTexture;
-		state.m_pProjectedMaterial	= NULL;
+		state.m_pSpotlightTexture		= m_nMuzzleFlashTexture;
+		state.m_pProjectedMaterial		= NULL;
+		state.m_fHorizontalFOVDegrees	= state.m_fVerticalFOVDegrees = r_flashlightmuzzleflashfov.GetFloat();
 
-		state.m_Color[0]			= m_flMuzzleFlashBrightness;
-		state.m_Color[1]			= m_flMuzzleFlashBrightness;
-		state.m_Color[2]			= m_flMuzzleFlashBrightness;
+		state.m_fLinearAtten = m_flMuzzleFlashBrightness;
 	}
+
+	// Es una linterna normal
 	else
 	{
-		state.m_pSpotlightTexture	= m_nFlashlightTexture;
-		state.m_pProjectedMaterial	= NULL;
+		state.m_pSpotlightTexture		= m_nFlashlightTexture;
+		state.m_pProjectedMaterial		= NULL;
+		state.m_fHorizontalFOVDegrees	= state.m_fVerticalFOVDegrees = m_flFOV;
+
+		state.m_fLinearAtten = m_flBrightness;
 	}
 
 	state.m_nSpotlightTextureFrame		= 0;
@@ -441,8 +420,7 @@ bool CBaseFlashlightEffect::ComputeLightPosAndOrientation( const Vector &vecPos,
 	return true;
 }
 
-//=================================================================================
-//=================================================================================
+//==================================================================================================================================================================
 
 //=========================================================
 //=========================================================

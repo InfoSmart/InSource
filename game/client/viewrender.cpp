@@ -49,7 +49,6 @@
 #include "renderparm.h"
 #include "modelrendersystem.h"
 #include "vgui/ISurface.h"
-#include "deferred/cdeferred_manager_client.h"
 
 #define PARTICLE_USAGE_DEMO									// uncomment to get particle bar thing
 
@@ -832,16 +831,14 @@ PRECACHE_REGISTER_BEGIN( GLOBAL, PrecachePostProcessingEffects )
 	PRECACHE( MATERIAL, "dev/depth_of_field" )
 	PRECACHE( MATERIAL, "dev/blurgaussian_3x3" )
 	PRECACHE( MATERIAL, "dev/fade_blur" )
-#if defined( INFESTED_DLL )
+
 	PRECACHE( MATERIAL, "dev/glow_color" )
 	PRECACHE( MATERIAL, "dev/glow_downsample" )
 	PRECACHE( MATERIAL, "dev/glow_blur_x" )
 	PRECACHE( MATERIAL, "dev/glow_blur_y" )
 	PRECACHE( MATERIAL, "dev/halo_add_to_screen" )
-#endif // INFESTED_DLL
-#if defined( INFESTED_DLL )
+
 	PRECACHE( MATERIAL, "engine/writestencil" )
-#endif // INFSETED_DLL
 PRECACHE_REGISTER_END( )
 
 //-----------------------------------------------------------------------------
@@ -964,17 +961,6 @@ void CSimpleRenderExecutor::AddView( CRendering3dView *pView )
 	pView->Draw();
 	m_pMainView->SetActiveRenderer( pPrevRenderer );
 }
-
-// @Deferred - Biohazard
-// this is allocated differently now
-#if 0 //!defined( INFESTED_DLL )
-static CViewRender g_ViewRender;
-IViewRender *GetViewRenderInstance()
-{
-	return &g_ViewRender;
-}
-#endif
-
 
 //-----------------------------------------------------------------------------
 // Constructor
@@ -1455,6 +1441,14 @@ void CViewRender::ViewDrawScene( bool bDrew3dSkybox, SkyboxVisibility_t nSkyboxV
 	ParticleMgr()->IncrementFrameCode();
 
 	DrawWorldAndEntities( drawSkybox, view, nClearFlags, pCustomVisibility );
+
+	// Shader Editor
+	VisibleFogVolumeInfo_t fogVolumeInfo;
+	render->GetVisibleFogVolume( view.origin, &fogVolumeInfo );
+
+	WaterRenderInfo_t info;
+	DetermineWaterRenderInfo( fogVolumeInfo, info );
+	g_ShaderEditorSystem->CustomViewRender( &g_CurrentViewID, fogVolumeInfo, info );
 
 	// Disable fog for the rest of the stuff
 	DisableFog();
@@ -2389,6 +2383,7 @@ void CViewRender::RenderView( const CViewSetup &view, const CViewSetup &hudViewS
 				if ( ( bDrew3dSkybox = pSkyView->Setup( view, &nClearFlags, &nSkyboxVisible ) ) != false )
 				{
 					AddViewToScene( pSkyView );
+					g_ShaderEditorSystem->UpdateSkymask();
 				}
 				SafeRelease( pSkyView );
 			}
@@ -2488,7 +2483,7 @@ void CViewRender::RenderView( const CViewSetup &view, const CViewSetup &hudViewS
 		// Now actually draw the viewmodel
 		DrawViewModels( view, whatToDraw & RENDERVIEW_DRAWVIEWMODEL );
 
-		g_ShaderEditorSystem->CustomPostRender();
+		g_ShaderEditorSystem->UpdateSkymask( bDrew3dSkybox );
 
 		DrawUnderwaterOverlay();
 
@@ -2555,6 +2550,7 @@ void CViewRender::RenderView( const CViewSetup &view, const CViewSetup &hudViewS
 		}
 
 		// And here are the screen-space effects
+		g_ShaderEditorSystem->CustomPostRender();
 
 		if ( IsPC() )
 		{
@@ -3649,10 +3645,7 @@ void CRendering3dView::BuildRenderableRenderLists( int viewID )
 {
 	MDLCACHE_CRITICAL_SECTION();
 
-// @Deferred - Biohazard
-// skip stuff
-	const bool bUpdateLightmaps = viewID != VIEW_SHADOW_DEPTH_TEXTURE &&
-		!GetDeferredManager()->IsDeferredRenderingEnabled();
+	const bool bUpdateLightmaps = viewID != VIEW_SHADOW_DEPTH_TEXTURE;
 
 	if ( bUpdateLightmaps )
 	{

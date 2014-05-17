@@ -5,7 +5,7 @@
 //=============================================================================//
 
 #include "cbase.h"
-#include "sdk_hud_chat.h"
+#include "in_hud_chat.h"
 #include "hud_macros.h"
 #include "text_message.h"
 #include "vguicenterprint.h"

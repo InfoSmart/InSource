@@ -71,6 +71,17 @@ public:
 	virtual void Shutdown() = 0;
 	virtual void PrecacheData() = 0;
 
+	// call before Init() to overwrite any paths, pass in NULL for the ones that shouldn't be overwritten
+	virtual void OverridePaths( const char *pszWorkingDirectory,
+		const char *pszCompilePath = NULL,		// abs path to compiler binaries
+		const char *pszLocalCompilePath = NULL,	// local path to compiler binaries, relative to shader source directory
+		const char *pszGamePath = NULL,
+		const char *pszCanvas = NULL,			// path to canvas files
+		const char *pszShaderSource = NULL,		// path to shader source files
+		const char *pszDumps = NULL,			// path to shader configuration files
+		const char *pszUserFunctions = NULL,	// path to custom function bodies
+		const char *pszEditorRoot = NULL ) = 0;	// path to 'shadereditorui' home directory
+
 	// update the lib
 	virtual void OnFrame( float frametime ) = 0;
 	virtual void OnPreRender( void *viewsetup ) = 0;
@@ -103,7 +114,7 @@ public:
 	virtual void		DrawPPEOnDemand( const int &index, const bool bInScene = false ) = 0;
 };
 
-#define SHADEREDIT_INTERFACE_VERSION "ShaderEditor004"
+#define SHADEREDIT_INTERFACE_VERSION "ShaderEditor005"
 
 #ifdef SHADER_EDITOR_DLL
 class ShaderEditorInterface;

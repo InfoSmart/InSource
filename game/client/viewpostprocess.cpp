@@ -1713,6 +1713,8 @@ static ConVar mat_postprocess_x( "mat_postprocess_x", "4" );
 static ConVar mat_postprocess_y( "mat_postprocess_y", "1" );
 static ConVar mat_postprocess_enable( "mat_postprocess_enable", "1", FCVAR_CHEAT );
 
+extern void DoModPostProcessing( IMatRenderContext *pRenderContext, int x, int y, int w, int h );
+
 void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, bool bPostVGui )
 {
 	// don't do this if disabled or in alt-tab
@@ -1740,6 +1742,8 @@ void DoEnginePostProcessing( int x, int y, int w, int h, bool bFlashlightIsOn, b
 	GetTonemapSettingsFromEnvTonemapController();
 
 	g_bFlashlightIsOn = bFlashlightIsOn;
+
+	DoModPostProcessing( pRenderContext, x, y, w, h );
 
 	// Use the appropriate autoexposure min / max settings.
 	// Mapmaker's overrides the convar settings.

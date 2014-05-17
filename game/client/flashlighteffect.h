@@ -21,8 +21,7 @@ class CFlashlightEffect : public CBaseFlashlightEffect
 public:
 	DECLARE_CLASS( CFlashlightEffect, CBaseFlashlightEffect );
 
-	CFlashlightEffect( int nEntIndex = 0 );
-
+	CFlashlightEffect( int nEntIndex = 0, const char *pTextureName = "effects/flashlight001" );
 	virtual void Init();
 };
 

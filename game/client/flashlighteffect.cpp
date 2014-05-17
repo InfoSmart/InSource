@@ -22,28 +22,18 @@
 // Comandos
 //=========================================================
 
-static ConVar r_flashlightfov( "r_flashlightfov", "50.0", FCVAR_CHEAT );
 static ConVar r_flashlightoffsetx( "r_flashlightoffsetx", "5.0", FCVAR_CHEAT );
 static ConVar r_flashlightoffsety( "r_flashlightoffsety", "-5.0", FCVAR_CHEAT );
 static ConVar r_flashlightoffsetz( "r_flashlightoffsetz", "0.0", FCVAR_CHEAT );
 static ConVar r_flashlightnear( "r_flashlightnear", "2.0", FCVAR_CHEAT );
-static ConVar r_flashlightfar( "r_flashlightfar", "750.0", FCVAR_CHEAT );
 static ConVar r_flashlightconstant( "r_flashlightconstant", "0.0", FCVAR_CHEAT );
-static ConVar r_flashlightlinear( "r_flashlightlinear", "100.0", FCVAR_CHEAT );
 static ConVar r_flashlightquadratic( "r_flashlightquadratic", "0.0", FCVAR_CHEAT );
 static ConVar r_flashlightambient( "r_flashlightambient", "0.0", FCVAR_CHEAT );
 
 //=========================================================
-//=========================================================
-void C_BasePlayer::GetFlashlightOffset( const Vector &vecForward, const Vector &vecRight, const Vector &vecUp, Vector *pVecOffset ) const
-{
-	*pVecOffset = r_flashlightoffsety.GetFloat() * vecUp + r_flashlightoffsetx.GetFloat() * vecRight + r_flashlightoffsetz.GetFloat() * vecForward;
-}
-
-//=========================================================
 // Constructor
 //=========================================================
-CFlashlightEffect::CFlashlightEffect( int nEntIndex ) : CBaseFlashlightEffect( nEntIndex, "effects/flashlight001" )
+CFlashlightEffect::CFlashlightEffect( int nEntIndex, const char *pTextureName ) : BaseClass( nEntIndex, pTextureName )
 {
 }
 
@@ -52,15 +42,10 @@ CFlashlightEffect::CFlashlightEffect( int nEntIndex ) : CBaseFlashlightEffect( n
 //=========================================================
 void CFlashlightEffect::Init()
 {
-	SetFOV( r_flashlightfov.GetFloat() );
 	SetOffset( r_flashlightoffsetx.GetFloat(), r_flashlightoffsety.GetFloat(), r_flashlightoffsetz.GetFloat() );
 	SetNear( r_flashlightnear.GetFloat() );
-	SetFar( r_flashlightfar.GetFloat() );
 	SetConstant( r_flashlightconstant.GetFloat() );
-	SetLinear( r_flashlightlinear.GetFloat() );
 	SetQuadratic( r_flashlightquadratic.GetFloat() );
-
-	SetBright( 1.0f );
 	SetAlpha( r_flashlightambient.GetFloat() );
 }
 
@@ -92,20 +77,22 @@ void CHeadlightEffect::UpdateLight( const Vector &vecPos, const Vector &vecDir, 
 		
 	state.m_vecLightOrigin = vecPos;
 
-	state.m_fHorizontalFOVDegrees = 45.0f;
-	state.m_fVerticalFOVDegrees = 30.0f;
-	state.m_fQuadraticAtten = r_flashlightquadratic.GetFloat();
-	state.m_fLinearAtten = r_flashlightlinear.GetFloat();
-	state.m_fConstantAtten = r_flashlightconstant.GetFloat();
+	state.m_fHorizontalFOVDegrees	= 45.0f;
+	state.m_fVerticalFOVDegrees		= 30.0f;
+	state.m_fQuadraticAtten			= r_flashlightquadratic.GetFloat();
+	state.m_fLinearAtten			= 100.0f;
+	state.m_fConstantAtten			= r_flashlightconstant.GetFloat();
+
 	state.m_Color[0] = 1.0f;
 	state.m_Color[1] = 1.0f;
 	state.m_Color[2] = 1.0f;
 	state.m_Color[3] = r_flashlightambient.GetFloat();
-	state.m_NearZ = r_flashlightnear.GetFloat();
-	state.m_FarZ = r_flashlightfar.GetFloat();
-	state.m_bEnableShadows = true;
-	state.m_pSpotlightTexture = m_nFlashlightTexture;
-	state.m_nSpotlightTextureFrame = 0;
+
+	state.m_NearZ					= r_flashlightnear.GetFloat();
+	state.m_FarZ					= 100.0f;
+	state.m_bEnableShadows			= true;
+	state.m_pSpotlightTexture		= m_nFlashlightTexture;
+	state.m_nSpotlightTextureFrame	= 0;
 	
 	if( GetFlashlightHandle() == CLIENTSHADOW_INVALID_HANDLE )
 	{
@@ -118,4 +105,3 @@ void CHeadlightEffect::UpdateLight( const Vector &vecPos, const Vector &vecDir, 
 	
 	g_pClientShadowMgr->UpdateProjectedTexture( GetFlashlightHandle(), true );
 }
-

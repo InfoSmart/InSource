@@ -5,72 +5,274 @@
 #include "cdll_client_int.h"
 #include "engine/IEngineSound.h"
 
-#include "sdk_loading_panel.h"
-#include "sdk_logo_panel.h"
-#include "ivmodemanager.h"
 #include "panelmetaclassmgr.h"
 #include "nb_header_footer.h"
 
+#include "viewpostprocess.h"
 #include "input.h"
+
+#include "c_in_player.h"
+#include "weapon_inbase.h"
+
+#include "physpropclientside.h"
+#include "c_te_legacytempents.h"
+#include "c_soundscape.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+//====================================================================
+//====================================================================
+
 vgui::HScheme g_hVGuiCombineScheme = 0;
-vgui::DHANDLE<CSDK_Logo_Panel> g_hLogoPanel;
+static CDllDemandLoader g_GameUI( "gameui" );
 
 static IClientMode *g_pClientMode[ MAX_SPLITSCREEN_PLAYERS ];
-static CDllDemandLoader g_GameUI( "gameui" );
+InClientMode g_ClientModeNormal[ MAX_SPLITSCREEN_PLAYERS ];
 
 #define SCREEN_FILE	"scripts/vgui_screens.txt"
 
-//=========================================================
+static CSDKModeManager g_ModeManager;
+IVModeManager *modemanager = ( IVModeManager * )&g_ModeManager;
+
+static InClientModeFullscreen g_FullscreenClientMode;
+
+//====================================================================
 // Comandos
-//=========================================================
+//====================================================================
 
 ConVar default_fov( "default_fov", "75", FCVAR_CHEAT );
 ConVar fov_desired( "fov_desired", "75", FCVAR_USERINFO, "Sets the base field-of-view.", true, 1.0, true, 75.0 );
 
+ConVar mat_sunrays_enable( "mat_sunrays_enable", "1", FCVAR_USERINFO | FCVAR_ARCHIVE );
+ConVar mat_fxaa_enable( "mat_fxaa_enable", "1", FCVAR_USERINFO | FCVAR_ARCHIVE );
+
+//====================================================================
+//====================================================================
 IClientMode *GetClientMode()
 {
 	ASSERT_LOCAL_PLAYER_RESOLVABLE();
 	return g_pClientMode[ GET_ACTIVE_SPLITSCREEN_SLOT() ];
 }
 
-ClientModeSDK g_ClientModeNormal[ MAX_SPLITSCREEN_PLAYERS ];
-
-//=========================================================
-// >> CSDKModeManager
-//=========================================================
-class CSDKModeManager : public IVModeManager
+//====================================================================
+//====================================================================
+IClientMode *GetClientModeNormal()
 {
-public:
-	virtual void	Init();
-	virtual void	SwitchMode( bool commander, bool force ) {}
-	virtual void	LevelInit( const char *newmap );
-	virtual void	LevelShutdown( void );
-	virtual void	ActivateMouse( bool isactive ) {}
-};
+	ASSERT_LOCAL_PLAYER_RESOLVABLE();
+	return &g_ClientModeNormal[ GET_ACTIVE_SPLITSCREEN_SLOT() ];
+}
 
-static CSDKModeManager g_ModeManager;
-IVModeManager *modemanager = ( IVModeManager * )&g_ModeManager;
+//====================================================================
+//====================================================================
+InClientMode* GetInClientMode()
+{
+	ASSERT_LOCAL_PLAYER_RESOLVABLE();
+	return &g_ClientModeNormal[ GET_ACTIVE_SPLITSCREEN_SLOT() ];
+}
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
+IClientMode *GetFullscreenClientMode()
+{
+	return &g_FullscreenClientMode;
+}
+
+//====================================================================
+// Inicia el sistema
+//====================================================================
+void InClientMode::Init()
+{
+	BaseClass::Init();
+
+	gameeventmanager->AddListener( this, "game_newmap", false );
+	gameeventmanager->AddListener( this, "game_round_restart", false );
+
+	m_pCurrentPostProcessController = NULL;
+}
+
+//====================================================================
+//====================================================================
+void InClientMode::Update()
+{
+	BaseClass::Update();
+
+	// Actualizamos los efectos PostProcessing
+	UpdatePostProcessingEffects();
+}
+
+//====================================================================
+// Inicializa el HUD
+//====================================================================
+void InClientMode::InitViewport()
+{
+	m_pViewport = new CHudViewport();
+	m_pViewport->Start( gameuifuncs, gameeventmanager );
+}
+
+//====================================================================
+// Apaga el sistema
+//====================================================================
+void InClientMode::Shutdown()
+{
+
+}
+
+//====================================================================
+// Prepara al Cliente para el inicio de un nivel
+//====================================================================
+void InClientMode::LevelInit( const char *newmap )
+{
+	// Reiniciamos la luz de ambiente
+	static ConVarRef mat_ambient_light_r( "mat_ambient_light_r" );
+	static ConVarRef mat_ambient_light_g( "mat_ambient_light_g" );
+	static ConVarRef mat_ambient_light_b( "mat_ambient_light_b" );
+
+	if ( mat_ambient_light_r.IsValid() )
+		mat_ambient_light_r.SetValue( "0" );
+	if ( mat_ambient_light_g.IsValid() )
+		mat_ambient_light_g.SetValue( "0" );
+	if ( mat_ambient_light_b.IsValid() )
+		mat_ambient_light_b.SetValue( "0" );
+
+	BaseClass::LevelInit( newmap );
+
+	// clear any DSP effects
+	CLocalPlayerFilter filter;
+	enginesound->SetRoomType( filter, 0 );
+	enginesound->SetPlayerDSP( filter, 0, true );
+}
+
+//====================================================================
+//====================================================================
+void InClientMode::LevelShutdown( void )
+{
+	BaseClass::LevelShutdown();
+}
+
+//====================================================================
+// El servidor ha llamado a un evento
+//====================================================================
+void InClientMode::FireGameEvent( IGameEvent *event )
+{
+	// Nombre del evento
+	const char *eventname = event->GetName();
+
+	// Nuevo mapa
+	if ( Q_strcmp( "game_newmap", eventname ) == 0 )
+	{
+		engine->ClientCmd("exec newmapsettings\n");
+	}
+	// Reinicio de la ronda
+	else if ( Q_strcmp( "game_round_restart", eventname ) == 0 )
+	{
+		// Recreamos todos los "prop_physics" en cliente
+		C_PhysPropClientside::RecreateAll();
+
+		// Limpiamos las entidades temporales
+		tempents->Clear();
+
+		// Limpiamos todos los decals (sangre, balas, etc)
+		engine->ClientCmd( "r_cleardecals" );
+
+		// Paramos los sonidos
+		enginesound->StopAllSounds( true );
+		Soundscape_OnStopAllSounds();
+	}
+	else
+	{
+		BaseClass::FireGameEvent(event);
+	}
+}
+
+//====================================================================
+// Actualiza los efectos PostProcessing
+//====================================================================
+void InClientMode::UpdatePostProcessingEffects()
+{
+	PostProcessParameters_t pProcessParameters;
+	C_IN_Player *pPlayer = C_IN_Player::GetLocalInPlayer();
+
+	if ( !pPlayer )
+		return;
+
+	if ( !pPlayer->GetActivePostProcessController() )
+		return;
+
+	// Obtenemos los parametros del controlador del Jugador
+	pProcessParameters = pPlayer->GetActivePostProcessController()->m_PostProcessParameters;
+
+	pPlayer->DoPostProcessingEffects( pProcessParameters );
+
+	SetPostProcessParams( &pProcessParameters );
+}
+
+//====================================================================
+//====================================================================
+void InClientMode::DoPostScreenSpaceEffects( const CViewSetup *pSetup )
+{
+}
+
+//====================================================================
+//====================================================================
+void InClientModeFullscreen::InitViewport()
+{
+	// Skip over BaseClass!!!
+	BaseClass::BaseClass::InitViewport();
+	
+	m_pViewport = new CFullscreenViewport();
+	m_pViewport->Start( gameuifuncs, gameeventmanager );
+}
+
+//====================================================================
+//====================================================================
+void InClientModeFullscreen::Init()
+{
+	CreateInterfaceFn gameUIFactory = g_GameUI.GetFactory();
+	
+	if ( gameUIFactory )
+	{
+		IGameUI *pGameUI = (IGameUI *) gameUIFactory(GAMEUI_INTERFACE_VERSION, NULL );
+		
+		// Se ha cargado la librería con éxito
+		if ( pGameUI  )
+		{
+			// TODO!
+			//pGameUI->SetLoadingBackgroundDialog( pPanel->GetVPanel() );
+		}		
+	}
+
+	// Skip over BaseClass!!!
+	BaseClass::Init();
+
+	// Load up the combine control panel scheme
+	if ( !g_hVGuiCombineScheme )
+	{
+		g_hVGuiCombineScheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), IsXbox() ? "resource/ClientScheme.res" : "resource/CombinePanelScheme.res", "CombineScheme" );
+	
+		if ( !g_hVGuiCombineScheme )
+		{
+			Warning( "Couldn't load combine panel scheme!\n" );
+		}
+	}
+}
+
+//====================================================================
+//====================================================================
 void CSDKModeManager::Init()
 {
 	for ( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; ++i )
 	{
 		ACTIVE_SPLITSCREEN_PLAYER_GUARD( i );
-		g_pClientMode[ i ] = GetClientModeNormal();
+		g_pClientMode[i] = GetClientModeNormal();
 	}
 
 	PanelMetaClassMgr()->LoadMetaClassDefinitionFile( SCREEN_FILE );
 	//GetClientVoiceMgr()->SetHeadLabelOffset( 40 );
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void CSDKModeManager::LevelInit( const char *newmap )
 {
 	for ( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; ++i )
@@ -80,8 +282,8 @@ void CSDKModeManager::LevelInit( const char *newmap )
 	}
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void CSDKModeManager::LevelShutdown( void )
 {
 	for( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; ++i )
@@ -91,281 +293,69 @@ void CSDKModeManager::LevelShutdown( void )
 	}
 }
 
-//=========================================================
-//=========================================================
-IClientMode *GetClientModeNormal()
+extern void UpdateScreenEffectTexture();
+
+PRECACHE_REGISTER_BEGIN( GLOBAL, ModPostProcessing )
+	PRECACHE( MATERIAL, "shaders/postproc_fxaa" )
+	PRECACHE( MATERIAL, "shaders/postproc_sunrays" )
+PRECACHE_REGISTER_END()
+
+//====================================================================
+//====================================================================
+void DoModPostProcessing( IMatRenderContext *pRenderContext, int x, int y, int w, int h )
 {
-	ASSERT_LOCAL_PLAYER_RESOLVABLE();
-	return &g_ClientModeNormal[ GET_ACTIVE_SPLITSCREEN_SLOT() ];
-}
+	ConVarRef mat_postprocess_enable( "mat_postprocess_enable" );
 
-//=========================================================
-//=========================================================
-ClientModeSDK* GetClientModeSDK()
-{
-	ASSERT_LOCAL_PLAYER_RESOLVABLE();
-	return &g_ClientModeNormal[ GET_ACTIVE_SPLITSCREEN_SLOT() ];
-}
-
-//=========================================================
-// these vgui panels will be closed at various times (e.g. when the level ends/starts)
-//=========================================================
-static char const *s_CloseWindowNames[] =
-{
-	"InfoMessageWindow",
-	"SkipIntro",
-};
-
-//=========================================================
-// This is the viewport that contains all the hud elements
-//=========================================================
-class CHudViewport : public CBaseViewport
-{
-private:
-	DECLARE_CLASS_SIMPLE( CHudViewport, CBaseViewport );
-
-protected:
-	virtual void ApplySchemeSettings( vgui::IScheme *pScheme )
-	{
-		BaseClass::ApplySchemeSettings( pScheme );
-
-		GetHud().InitColors( pScheme );
-
-		SetPaintBackgroundEnabled( false );
-	}
-
-	virtual void CreateDefaultPanels() 
-	{ 
-		/* don't create any panels yet*/ 
-	};
-};
-
-//=========================================================
-// >> FullscreenSDKViewport
-//=========================================================
-class FullscreenSDKViewport : public CHudViewport
-{
-private:
-	DECLARE_CLASS_SIMPLE( FullscreenSDKViewport, CHudViewport );
-
-private:
-	virtual void InitViewportSingletons()
-	{
-		SetAsFullscreenViewportInterface();
-	}
-};
-
-//=========================================================
-//=========================================================
-class ClientModeSDKFullscreen : public	ClientModeSDK
-{
-	DECLARE_CLASS_SIMPLE( ClientModeSDKFullscreen, ClientModeSDK );
-public:
-	virtual void InitViewport()
-	{
-		// Skip over BaseClass!!!
-		BaseClass::BaseClass::InitViewport();
-		m_pViewport = new FullscreenSDKViewport();
-		m_pViewport->Start( gameuifuncs, gameeventmanager );
-	}
-	virtual void Init()
-	{
-		CreateInterfaceFn gameUIFactory = g_GameUI.GetFactory();
-		if ( gameUIFactory )
-		{
-			IGameUI *pGameUI = (IGameUI *) gameUIFactory(GAMEUI_INTERFACE_VERSION, NULL );
-			if ( NULL != pGameUI )
-			{
-				// insert stats summary panel as the loading background dialog
-				CSDK_Loading_Panel *pPanel = GSDKLoadingPanel();
-				pPanel->InvalidateLayout( false, true );
-				pPanel->SetVisible( false );
-				pPanel->MakePopup( false );
-				pGameUI->SetLoadingBackgroundDialog( pPanel->GetVPanel() );
-
-				// add ASI logo to main menu
-				CSDK_Logo_Panel *pLogo = new CSDK_Logo_Panel( NULL, "ASILogo" );
-				vgui::VPANEL GameUIRoot = enginevgui->GetPanel( PANEL_GAMEUIDLL );
-				pLogo->SetParent( GameUIRoot );
-				g_hLogoPanel = pLogo;
-			}		
-		}
-
-		// Skip over BaseClass!!!
-		BaseClass::BaseClass::Init();
-
-		// Load up the combine control panel scheme
-		if ( !g_hVGuiCombineScheme )
-		{
-			g_hVGuiCombineScheme = vgui::scheme()->LoadSchemeFromFileEx( enginevgui->GetPanel( PANEL_CLIENTDLL ), IsXbox() ? "resource/ClientScheme.res" : "resource/CombinePanelScheme.res", "CombineScheme" );
-			if (!g_hVGuiCombineScheme)
-			{
-				Warning( "Couldn't load combine panel scheme!\n" );
-			}
-		}
-	}
-	void Shutdown()
-	{
-		DestroySDKLoadingPanel();
-		if (g_hLogoPanel.Get())
-		{
-			delete g_hLogoPanel.Get();
-		}
-	}
-};
-
-//=========================================================
-//=========================================================
-static ClientModeSDKFullscreen g_FullscreenClientMode;
-IClientMode *GetFullscreenClientMode()
-{
-	return &g_FullscreenClientMode;
-}
-
-//=========================================================
-//=========================================================
-void ClientModeSDK::Init()
-{
-	BaseClass::Init();
-	gameeventmanager->AddListener( this, "game_newmap", false );
-}
-
-//=========================================================
-//=========================================================
-void ClientModeSDK::Shutdown()
-{
-	if ( SDKBackgroundMovie() )
-	{
-		SDKBackgroundMovie()->ClearCurrentMovie();
-	}
-
-	DestroySDKLoadingPanel();
-
-	if ( g_hLogoPanel.Get() )
-		delete g_hLogoPanel.Get();
-}
-
-//=========================================================
-//=========================================================
-void ClientModeSDK::InitViewport()
-{
-	m_pViewport = new CHudViewport();
-	m_pViewport->Start( gameuifuncs, gameeventmanager );
-}
-
-//=========================================================
-//=========================================================
-void ClientModeSDK::LevelInit( const char *newmap )
-{
-	// reset ambient light
-	static ConVarRef mat_ambient_light_r( "mat_ambient_light_r" );
-	static ConVarRef mat_ambient_light_g( "mat_ambient_light_g" );
-	static ConVarRef mat_ambient_light_b( "mat_ambient_light_b" );
-
-	if ( mat_ambient_light_r.IsValid() )
-	{
-		mat_ambient_light_r.SetValue( "0" );
-	}
-
-	if ( mat_ambient_light_g.IsValid() )
-	{
-		mat_ambient_light_g.SetValue( "0" );
-	}
-
-	if ( mat_ambient_light_b.IsValid() )
-	{
-		mat_ambient_light_b.SetValue( "0" );
-	}
-
-	BaseClass::LevelInit(newmap);
-
-	// sdk: make sure no windows are left open from before
-	SDK_CloseAllWindows();
-
-	// clear any DSP effects
-	CLocalPlayerFilter filter;
-	enginesound->SetRoomType( filter, 0 );
-	enginesound->SetPlayerDSP( filter, 0, true );
-
-	// Primera persona
-	::input->CAM_ToFirstPerson();
-}
-
-//=========================================================
-//=========================================================
-void ClientModeSDK::LevelShutdown( void )
-{
-	BaseClass::LevelShutdown();
-
-	// sdk:shutdown all vgui windows
-	SDK_CloseAllWindows();
-}
-
-//=========================================================
-//=========================================================
-void ClientModeSDK::FireGameEvent( IGameEvent *event )
-{
-	const char *eventname = event->GetName();
-
-	if ( Q_strcmp( "asw_mission_restart", eventname ) == 0 )
-	{
-		SDK_CloseAllWindows();
-	}
-	else if ( Q_strcmp( "game_newmap", eventname ) == 0 )
-	{
-		engine->ClientCmd("exec newmapsettings\n");
-	}
-	else
-	{
-		BaseClass::FireGameEvent(event);
-	}
-}
-
-//=========================================================
-// Close all ASW specific VGUI windows that the player might have open
-//=========================================================
-void ClientModeSDK::SDK_CloseAllWindows()
-{
-	SDK_CloseAllWindowsFrom(GetViewport());
-}
-
-//=========================================================
-// recursive search for matching window names
-//=========================================================
-void ClientModeSDK::SDK_CloseAllWindowsFrom(vgui::Panel* pPanel)
-{
-	if (!pPanel)
+	// No queremos estos efectos
+	if ( !mat_postprocess_enable.GetBool() )
 		return;
 
-	int num_names = NELEMS(s_CloseWindowNames);
+	C_IN_Player *pPlayer = C_IN_Player::GetLocalInPlayer();
 
-	for (int k=0;k<pPanel->GetChildCount();k++)
+	if ( !pPlayer )
+		return;
+
+	C_BaseInWeapon *pWeapon = pPlayer->GetActiveInWeapon();
+
+	//
+	// FXAA
+	//
+	if ( mat_fxaa_enable.GetBool() )
 	{
-		Panel *pChild = pPanel->GetChild(k);
-		if (pChild)
+		static IMaterial *pMatFXAA = materials->FindMaterial( "shaders/postproc_fxaa", TEXTURE_GROUP_OTHER );
+		if ( pMatFXAA )
 		{
-			SDK_CloseAllWindowsFrom(pChild);
+			UpdateScreenEffectTexture();
+			pRenderContext->DrawScreenSpaceRectangle( pMatFXAA, 0, 0, w, h, 0, 0, w - 1, h - 1, w, h );
 		}
 	}
 
-	// When VGUI is shutting down (i.e. if the player closes the window), GetName() can return NULL
-	const char *pPanelName = pPanel->GetName();
-	if ( pPanelName != NULL )
+	//
+	// Sun Rays
+	//
+	if ( mat_sunrays_enable.GetBool() )
 	{
-		for (int i=0;i<num_names;i++)
+		static IMaterial *pMatSunRays = materials->FindMaterial( "shaders/postproc_sunrays", TEXTURE_GROUP_OTHER );
+		if ( pMatSunRays )
 		{
-			if ( !strcmp( pPanelName, s_CloseWindowNames[i] ) )
+			UpdateScreenEffectTexture();
+			pRenderContext->DrawScreenSpaceRectangle( pMatSunRays, 0, 0, w, h, 0, 0, w - 1, h - 1, w, h );
+		}
+	}
+
+	// Tenemos un arma
+	if ( pWeapon )
+	{
+		// Tenemos la mira de acero
+		/*if ( pWeapon->IsIronsighted() )
+		{
+			static IMaterial *pGaussian = materials->FindMaterial( "shaders/ppe_gaussian_blur", TEXTURE_GROUP_OTHER );
+
+			if ( pGaussian )
 			{
-				pPanel->SetVisible(false);
-				pPanel->MarkForDeletion();
+				UpdateScreenEffectTexture();
+				pRenderContext->DrawScreenSpaceRectangle( pGaussian, 0, 0, w, h, 0, 0, w - 1, h - 1, w, h );
 			}
-		}
+		}*/
 	}
-}
-
-//=========================================================
-//=========================================================
-void ClientModeSDK::DoPostScreenSpaceEffects( const CViewSetup *pSetup )
-{
-
 }

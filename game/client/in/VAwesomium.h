@@ -48,6 +48,9 @@ protected:
 	virtual void OnMouseWheeled(int delta);
 	virtual void OnRequestFocus(vgui::VPANEL subFocus, vgui::VPANEL defaultPanel);
 
+public:
+	static int m_iNumberOfViews;
+
 protected:
 	void MouseButtonHelper(vgui::MouseCode code, bool isUp);
 	void KeyboardButtonHelper(vgui::KeyCode code, bool isUp);
@@ -57,12 +60,9 @@ protected:
 	void ResizeView(void);
 	Awesomium::WebCore *m_WebCore;
 	Awesomium::WebView *m_WebView;
-	Awesomium::WebSession *m_WebSession;
 	Awesomium::BitmapSurface *m_BitmapSurface;
 	int m_iTextureId;
 	int	m_iNearestPowerWidth;
 	int m_iNearestPowerHeight;
 	bool m_bHasLoaded;
-	
-	static int m_iNumberOfViews;
 };

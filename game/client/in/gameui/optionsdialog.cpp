@@ -7,6 +7,10 @@
 
 #include "OptionsDialog.h"
 
+#ifdef PropertySheet
+#undef PropertySheet
+#endif
+
 #include "vgui_controls/Button.h"
 #include "vgui_controls/CheckButton.h"
 #include "vgui_controls/PropertySheet.h"

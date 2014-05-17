@@ -97,18 +97,20 @@ public:
 	virtual void SetNear( float flValue ) { m_flNear = flValue; }
 	virtual void SetFar( float flValue ) { m_flFar = flValue; }
 	virtual void SetConstant( float flValue ) { m_flConstant = flValue; }
-	virtual void SetLinear( float flValue ) { m_flLinear = flValue; }
 	virtual void SetQuadratic( float flValue ) { m_flQuadratic = flValue; }
 
-	virtual void SetBright( float flValue ) { m_flBrightness = flValue; }
+	virtual void SetBright( float flValue ) 
+	{ 
+		m_flBrightness				= flValue; 
+		m_flMuzzleFlashBrightness	= flValue;
+	}
 	virtual void SetAlpha( float flValue ) { m_flAlpha = flValue; }
 
-	virtual void SetFlashEnabled( bool bValue, float flBright ) 
+	virtual void SetMuzzleFlashEnabled( bool bValue, float flBright = 15.0f ) 
 	{ 
 		m_bMuzzleFlashEnabled		= bValue;
 		m_flMuzzleFlashBrightness	= flBright;
 	}
-	virtual void SetFlashBright( float flValue ) { m_flMuzzleFlashBrightness = flValue; }
 
 protected:
 	bool m_bIsOn;
@@ -133,7 +135,6 @@ protected:
 	bool  m_bCastsShadows;
 
 	float m_flConstant;
-	float m_flLinear;
 	float m_flQuadratic;
 
 	float m_flBrightness;
@@ -174,7 +175,7 @@ public:
 			m_flFarZ = flFarZ;
 			m_flLinearAtten = flLinearAtten;
 			m_pFlashlightEffect->Update( vecPos, vecDir, vecRight, vecUp );
-			m_pFlashlightEffect->SetFlashEnabled( bMuzzleFlashActive, m_flMuzzleFlashBrightness );
+			m_pFlashlightEffect->SetMuzzleFlashEnabled( bMuzzleFlashActive, m_flMuzzleFlashBrightness );
 		}
 
 		if ( !bMuzzleFlashActive && !m_bFlashlightOn && m_pFlashlightEffect )
@@ -186,7 +187,7 @@ public:
 		if ( bMuzzleFlashActive && !m_bFlashlightOn && !m_pFlashlightEffect )
 		{
 			m_pFlashlightEffect = new CBaseFlashlightEffect( m_nFlashlightEntIndex, NULL );
-			m_pFlashlightEffect->SetFlashEnabled( bMuzzleFlashActive, m_flMuzzleFlashBrightness );
+			m_pFlashlightEffect->SetMuzzleFlashEnabled( bMuzzleFlashActive, m_flMuzzleFlashBrightness );
 		}
 
 		if ( bMuzzleFlashActive && m_nFXComputeFrame != gpGlobals->framecount )
