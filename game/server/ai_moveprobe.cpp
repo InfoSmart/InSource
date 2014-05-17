@@ -455,7 +455,8 @@ bool CAI_MoveProbe::CheckStep( const CheckStepArgs_t &args, CheckStepResult_t *p
 		if ( !(args.flags & AITGM_CRAWL_LARGE_STEPS) )
 		{
 			// in empty space, lie and say we hit the world
-			if (trace.fraction == 1.0f)
+			// Iván: Por ahora queremos realismo, así que los NPC podrán caer de bordes
+			/*if (trace.fraction == 1.0f)
 			{
 				if ( g_bAIDebugStep )
 					NDebugOverlay::Box( trace.endpos, WorldAlignMins(), WorldAlignMaxs(), 255, 0, 0, 0, 5 );
@@ -470,6 +471,18 @@ bool CAI_MoveProbe::CheckStep( const CheckStepArgs_t &args, CheckStepResult_t *p
 					pResult->pBlocker = GetContainingEntity( INDEXENT(0) );
 				}
 				return false;
+			}*/
+
+			Vector vecForward;
+			GetOuter()->GetVectors( &vecForward, NULL, NULL );
+
+			trace_t	tr;
+			AI_TraceHull( GetOuter()->WorldSpaceCenter(), GetOuter()->WorldSpaceCenter() + vecForward * 15, WorldAlignMins(), WorldAlignMaxs(), MASK_NPCSOLID, GetOuter(), COLLISION_GROUP_NONE, &tr );
+
+			if ( tr.fraction != 1.0 && ( !tr.m_pEnt || tr.m_pEnt->IsWorld() ) )
+			{
+				pResult->pBlocker = GetContainingEntity( INDEXENT(0) );
+				return false;
 			}
 
 			if ( g_bAIDebugStep )
@@ -479,7 +492,7 @@ bool CAI_MoveProbe::CheckStep( const CheckStepArgs_t &args, CheckStepResult_t *p
 		AI_PROFILE_SCOPE_END();
 
 		// If we're not crawling check that our floor is standable
-		if ( !(args.flags & AITGM_CRAWL_LARGE_STEPS) )
+		if ( !(args.flags & AITGM_CRAWL_LARGE_STEPS) && pResult->pBlocker && trace.m_pEnt )
 		{
 			// Checks to see if the thing we're on is a *type* of thing we
 			// are capable of standing on. Always true for our current ground ent

@@ -116,12 +116,6 @@
 #include "matchmaking/swarm/imatchext_swarm.h"
 //#endif // SDK_DLL
 
-// @Deferred - Biohazard
-// for cookie string table
-#include "deferred/deferred_shared_common.h"
-
-
-
 
 #ifdef _WIN32
 #include "IGameUIFuncs.h"
@@ -603,8 +597,7 @@ static bool InitGameSystems( CreateInterfaceFn appSystemFactory )
 
 	// load Mod specific game events ( MUST be before InitAllSystems() so it can pickup the mod specific events)
 	gameeventmanager->LoadEventsFromFile("resource/ModEvents.res");
-
-
+	gameeventmanager->LoadEventsFromFile("resource/AltEvents.res");
 
 	if ( !IGameSystem::InitAllSystems() )
 		return false;
@@ -1503,18 +1496,13 @@ void CServerGameDLL::CreateNetworkStringTables( void )
 	g_pStringTableInfoPanel = networkstringtable->CreateStringTable( "InfoPanel", MAX_INFOPANEL_STRINGS );
 	g_pStringTableClientSideChoreoScenes = networkstringtable->CreateStringTable( "Scenes", MAX_CHOREO_SCENES_STRINGS, 0, 0, NSF_DICTIONARY_ENABLED );
 
-// @Deferred - Biohazard
-	g_pStringTable_LightCookies = networkstringtable->CreateStringTable( COOKIE_STRINGTBL_NAME, MAX_COOKIE_TEXTURES, 0, 0, NSF_DICTIONARY_ENABLED );
-
 	Assert( g_pStringTableParticleEffectNames &&
 			g_pStringTableEffectDispatch &&
 			g_pStringTableVguiScreen &&
 			g_pStringTableMaterials &&
 			g_pStringTableInfoPanel &&
 			g_pStringTableClientSideChoreoScenes &&
-			g_pStringTableExtraParticleFiles &&
-// @Deferred - Biohazard
-			g_pStringTable_LightCookies );
+			g_pStringTableExtraParticleFiles );
 
 	// Need this so we have the error material always handy
 	PrecacheMaterial( "debug/debugempty" );

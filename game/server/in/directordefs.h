@@ -1,4 +1,4 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #ifndef DIRECTORDEFS_H
 #define DIRECTORDEFS_H
@@ -9,15 +9,15 @@
 // Director
 //==============================================
 
-#define DIRECTOR_CUSTOM
-//#define DIRECTOR_CUSTOM_MUSIC
-//#define DIRECTOR_CUSTOM_MANAGER
+#define CUSTOM_DIRECTOR
+//#define CUSTOM_DIRECTOR_MUSIC
+//#define CUSTOM_DIRECTOR_MANAGER
 
 #define DIRECTOR_MAX_SPAWN_TRYS		5		// Numero de intentos máximo para la creación de un hijo
 #define DIRECTOR_MAX_NAV_AREAS		3000	// Numero máximo de areas de navegación a usar para la creación de un hijo
 #define DIRECTOR_MAX_NAV_TRYS		20		//
 
-#define DIRECTOR_SPAWN_SECUREDISTANCE	300	// Distancia segura
+#define DIRECTOR_SPAWN_SECUREDISTANCE	500	// Distancia segura
 
 #define DIRECTOR_POPULATION_FILE	"scripts/director_population.txt"
 #define DIRECTOR_ITEMS_FILE			"scripts/director_items.txt"
@@ -32,20 +32,38 @@
 #define DIRECTOR_CON_DEBUG	Color(116, 1, 223)
 #define DIRECTOR_CON_MUSIC	Color(255, 128, 0)
 
-#define DIRECTOR_SECURE_ENTITIES	50	// Si el limite de entidades pasa esta cantidad, el Director dejará de crear hijos
+#define DIRECTOR_SECURE_ENTITIES	100	// Si el limite de entidades pasa esta cantidad, el Director dejará de crear hijos
+#define DIRECTOR_MAX_CHILDS 50
 
 enum DirectorStatus
 {
-	INVALID = -1,
-	SLEEP,		// Dormido
-	RELAXED,	// Relajado
-	PANIC,		// Pánico
-	POST_PANIC, // Post-Pánico
-	BOSS,		// Jefe
-	CLIMAX,		// Climax
-	GAMEOVER,	// Juego terminado
+	ST_INVALID = -1,
 
-	LAST_STATUS,
+	ST_NORMAL,
+	ST_BOSS,
+	ST_COMBAT,
+	ST_FINALE,
+	ST_GAMEOVER,
+
+	LAST_STATUS
+};
+
+enum DirectorPhase
+{
+	PH_INVALID = -1,
+
+	PH_RELAX,			// Tiempo de Relajación. No se crean Hijos
+	PH_BUILD_UP,		// Se deben crear Hijos
+	PH_CRUEL_BUILD_UP,	// Se deben crear Hijos ¡siempre! Sin descansos
+	PH_SANITY_FADE,		// No se deben crear Hijos hasta mejorar la cordura
+	PH_POPULATION_FADE, // No se deben crear Hijos hasta no quedar muchos hijos
+	PH_EVENT,			// Evento
+
+#ifdef APOCALYPSE
+	PH_CORPSE_BUILD,	// Construcción de cadaveres, como decoración
+#endif
+
+	LAST_PHASE,
 };
 
 enum DirectorAngry

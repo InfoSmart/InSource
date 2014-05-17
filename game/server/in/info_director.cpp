@@ -17,9 +17,9 @@
 #include "in_gamerules.h"
 
 
-//=========================================================
+//====================================================================
 // Información y Red
-//=========================================================
+//====================================================================
 
 LINK_ENTITY_TO_CLASS( info_director, CInfoDirector );
 
@@ -33,11 +33,11 @@ BEGIN_DATADESC( CInfoDirector )
 	DEFINE_INPUTFUNC( FIELD_VOID, "HowAliveSpecials", InputHowAliveSpecials ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "HowAliveBoss", InputHowAliveBoss ),
 
-	DEFINE_INPUTFUNC( FIELD_VOID, "ForceRelax", InputForceRelax ),
-	DEFINE_INPUTFUNC( FIELD_INTEGER, "ForcePanic", InputForcePanic ),
-	DEFINE_INPUTFUNC( FIELD_VOID, "ForceInfinitePanic", InputForceInfinitePanic ),
-	DEFINE_INPUTFUNC( FIELD_VOID, "ForceBoss", InputForceBoss ),
-	DEFINE_INPUTFUNC( FIELD_VOID, "ForceClimax", InputForceClimax ),
+	DEFINE_INPUTFUNC( FIELD_VOID, "StartNormal", InputStartNormal ),
+	DEFINE_INPUTFUNC( FIELD_INTEGER, "StartCombat", InputStartCombat ),
+	DEFINE_INPUTFUNC( FIELD_VOID, "StartCruelCombat", InputStartCruelCombat ),
+	DEFINE_INPUTFUNC( FIELD_VOID, "StartBoss", InputStartBoss ),
+	DEFINE_INPUTFUNC( FIELD_VOID, "StartFinale", InputStartFinale ),
 
 	DEFINE_INPUTFUNC( FIELD_STRING, "SetPopulation", InputSetPopulation ),
 	DEFINE_INPUTFUNC( FIELD_VOID, "DisclosePlayers", InputDisclosePlayers ),
@@ -75,68 +75,52 @@ BEGIN_DATADESC( CInfoDirector )
 
 END_DATADESC()
 
-//=========================================================
-// Creación en el mapa
-//=========================================================
-
-//=========================================================
+//====================================================================
 // Director ¿Que tan enojado estas?
-//=========================================================
+//====================================================================
 void CInfoDirector::InputHowAngry( inputdata_t &inputdata )
 {
 	OnResponseAngry.Set( Director->m_iAngry, inputdata.pActivator, inputdata.pCaller );
 }
 
-//=========================================================
+//====================================================================
 // Director ¿Cual es tu estado?
-//=========================================================
+//====================================================================
 void CInfoDirector::InputWhatsYourStatus( inputdata_t &inputdata )
 {
 	OnResponseStatus.Set( Director->m_iStatus, inputdata.pActivator, inputdata.pCaller );
 }
 
-//=========================================================
+//====================================================================
 // Director ¿Cuantos hijos estan vivos?
-//=========================================================
+//====================================================================
 void CInfoDirector::InputHowAliveChilds( inputdata_t &inputdata )
 {
-	OnResponseAliveChilds.Set( Director->m_iChildsAlive, inputdata.pActivator, inputdata.pCaller );
+	OnResponseAliveChilds.Set( Director->m_iCommonAlive, inputdata.pActivator, inputdata.pCaller );
 }
 
-//=========================================================
+//====================================================================
 // Director ¿Cuantos hijos especiales estan vivos?
-//=========================================================
+//====================================================================
 void CInfoDirector::InputHowAliveSpecials( inputdata_t &inputdata )
 {
 	OnResponseAliveSpecials.Set( Director->m_iSpecialsAlive, inputdata.pActivator, inputdata.pCaller );
 }
 
-//=========================================================
+//====================================================================
 // Director ¿Cuantos jefes estan vivos?
-//=========================================================
+//====================================================================
 void CInfoDirector::InputHowAliveBoss( inputdata_t &inputdata )
 {
 	OnResponseAliveBoss.Set( Director->m_iBossAlive, inputdata.pActivator, inputdata.pCaller );
 }
 
-void CInfoDirector::InputForceRelax( inputdata_t &inputdata )
+void CInfoDirector::InputStartNormal( inputdata_t &inputdata )
 {
-	Director->Relaxed();
+	Director->SetStatus( ST_NORMAL );
 }
 
-void CInfoDirector::InputForcePanic( inputdata_t &inputdata )
-{
-	CBasePlayer *pActivator = NULL;
-
-	if ( inputdata.pActivator->IsPlayer() )
-	{
-		pActivator = ToBasePlayer( inputdata.pActivator );
-	}
-
-	Director->Panic( pActivator, inputdata.value.Int() );
-}
-
-void CInfoDirector::InputForceInfinitePanic( inputdata_t &inputdata )
+void CInfoDirector::InputStartCombat( inputdata_t &inputdata )
 {
 	CBasePlayer *pActivator = NULL;
 
@@ -145,17 +129,29 @@ void CInfoDirector::InputForceInfinitePanic( inputdata_t &inputdata )
 		pActivator = ToBasePlayer( inputdata.pActivator );
 	}
 
-	Director->Panic( pActivator, 0, true );
+	Director->StartCombat( pActivator, inputdata.value.Int() );
 }
 
-void CInfoDirector::InputForceBoss( inputdata_t &inputdata )
+void CInfoDirector::InputStartCruelCombat( inputdata_t &inputdata )
+{
+	CBasePlayer *pActivator = NULL;
+
+	if ( inputdata.pActivator->IsPlayer() )
+	{
+		pActivator = ToBasePlayer( inputdata.pActivator );
+	}
+
+	Director->StartCombat( pActivator, 2, true );
+}
+
+void CInfoDirector::InputStartBoss( inputdata_t &inputdata )
 {
 	Director->m_bBossPendient = true;
 }
 
-void CInfoDirector::InputForceClimax( inputdata_t &inputdata )
+void CInfoDirector::InputStartFinale( inputdata_t &inputdata )
 {
-	Director->Climax();
+	Director->SetStatus( ST_FINALE );
 }
 
 void CInfoDirector::InputSetPopulation( inputdata_t &inputdata )
@@ -191,7 +187,7 @@ void CInfoDirector::InputSetSpawnInNormalAreas(inputdata_t &inputdata)
 
 void CInfoDirector::InputStartSurvivalTime( inputdata_t &inputdata )
 {
-	Director->m_bSurvivalTimeStarted = true;
+	//Director->m_bSurvivalTimeStarted = true;
 }
 
 void CInfoDirector::InputDisableMusic( inputdata_t &inputdata )

@@ -1,4 +1,4 @@
-//========= Iván Bravo Bravo. 2014 - InfoSmart ============//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #include "cbase.h"
 #include "in_player.h"
@@ -30,25 +30,48 @@
 extern int gEvilImpulse101;
 extern void respawn( CBaseEntity *pEdict, bool fCopyCorpse );
 
-//=========================================================
+extern int AE_FOOTSTEP_RIGHT;
+extern int AE_FOOTSTEP_LEFT;
+
+//====================================================================
 // Comandos
-//=========================================================
+//====================================================================
 
-ConVar playermodel_sp("cl_playermodel_sp", "models/survivors/survivor_teenangst.mdl", FCVAR_ARCHIVE, "Establece el modelo del jugador en el modo Historia");
+ConVar playermodel_sp( "cl_playermodel_sp", "models/survivors/survivor_teenangst.mdl", FCVAR_ARCHIVE, "Establece el modelo del jugador en el modo Historia" );
 
-ConVar respawn_afterdeath("in_respawn_afterdeath", "0", FCVAR_CHEAT | FCVAR_SERVER, "");
-ConVar wait_deathcam("in_wait_deathcam", "4", FCVAR_SERVER, "");
+ConVar respawn_afterdeath( "in_respawn_afterdeath", "0", FCVAR_CHEAT | FCVAR_SERVER, "" );
+ConVar wait_deathcam( "in_wait_deathcam", "4", FCVAR_SERVER, "" );
 
-ConVar stamina_drain("in_stamina_drain", "5", FCVAR_CHEAT | FCVAR_SERVER, "");
-ConVar stamina_infinite("in_stamina_infinite", "0", FCVAR_CHEAT, "");
+ConVar stamina_drain( "in_stamina_drain", "3", FCVAR_CHEAT | FCVAR_SERVER, "" );
+ConVar stamina_infinite( "in_stamina_infinite", "0", FCVAR_CHEAT, "" );
 
-ConVar health_regeneration("in_helth_regeneration", "1", FCVAR_SERVER);
-ConVar health_regeneration_add("in_helth_regeneration_add", "1", FCVAR_CHEAT);
-ConVar health_regeneration_wait("in_health_regeneration_wait", "5", FCVAR_CHEAT);
+ConVar health_regeneration( "in_helth_regeneration", "1", FCVAR_SERVER );
+ConVar health_regeneration_recover( "in_health_regeneration_recover", "1", FCVAR_CHEAT );
+ConVar health_regeneration_interval( "in_health_regeneration_interval", "15", FCVAR_CHEAT );
 
-//=========================================================
+ConVar climb_height_check( "in_climb_height_check", "500", FCVAR_CHEAT );
+
+ConVar weapon_single( "in_weapon_single", "1", FCVAR_SERVER );
+
+//====================================================================
+// Macros
+//====================================================================
+
+#define STAMINA_DRAIN		stamina_drain.GetFloat()
+#define STAMINA_INFINITE	stamina_infinite.GetBool()
+
+#define HEALTH_REGEN			health_regeneration.GetBool()
+#define HEALTH_REGEN_RECOVER	health_regeneration_recover.GetInt()
+#define HEALTH_REGEN_INTERVAL	gpGlobals->curtime + health_regeneration_interval.GetInt()
+
+#define CLIMB_HEIGHT_CHECK	climb_height_check.GetInt()
+#define WEAPON_SINGLE		weapon_single.GetBool()
+
+#define NEXT_NAV_CHECK gpGlobals->curtime + 0.8f
+
+//====================================================================
 // Información y Red
-//=========================================================
+//====================================================================
 
 // DT_TEPlayerAnimEvent
 IMPLEMENT_SERVERCLASS_ST_NOBASE( CTEPlayerAnimEvent, DT_TEPlayerAnimEvent )
@@ -66,7 +89,7 @@ END_SEND_TABLE()
 BEGIN_SEND_TABLE_NOBASE( CIN_Player, DT_InLocalPlayerExclusive )
 	SendPropVector( SENDINFO(m_vecOrigin), -1,  SPROP_NOSCALE|SPROP_CHANGES_OFTEN, 0.0f, HIGH_DEFAULT, SendProxy_Origin ),
 	SendPropFloat( SENDINFO_VECTORELEM(m_angEyeAngles, 0), 8, SPROP_CHANGES_OFTEN, -90.0f, 90.0f ),
-	SendPropEHandle( SENDINFO(m_nRagdoll) ),
+	SendPropEHandle( SENDINFO(m_nRagdoll) )
 END_SEND_TABLE()
 
 // DT_InNonLocalPlayerExclusive
@@ -96,8 +119,19 @@ IMPLEMENT_SERVERCLASS_ST( CIN_Player, DT_InPlayer )
 	SendPropDataTable( "inlocaldata", 0, &REFERENCE_SEND_TABLE(DT_InLocalPlayerExclusive), SendProxy_SendLocalDataTable ),
 	SendPropDataTable( "innonlocaldata", 0, &REFERENCE_SEND_TABLE(DT_InNonLocalPlayerExclusive), SendProxy_SendNonLocalDataTable ),
 
-	SendPropBool( SENDINFO(m_bDejected) ),
 	SendPropBool( SENDINFO(m_bInCombat) ),
+	SendPropBool( SENDINFO(m_bMovementDisabled) ),
+
+	SendPropInt( SENDINFO(m_iEyeAngleZ) ),
+
+	SendPropBool( SENDINFO(m_bIncap) ),
+	SendPropBool( SENDINFO(m_bClimbingToHell) ),
+	SendPropBool( SENDINFO(m_bWaitingGroundDeath) ),
+	SendPropInt( SENDINFO(m_iTimesDejected) ),
+	SendPropFloat( SENDINFO(m_flHelpProgress) ),
+	SendPropFloat( SENDINFO(m_flClimbingHold) ),
+
+	SendPropEHandle( SENDINFO(m_nPlayerInventory) ),
 END_SEND_TABLE()
 
 // DATADESC
@@ -112,10 +146,11 @@ BEGIN_DATADESC( CIN_Player )
 	DEFINE_FIELD( m_flSanity, FIELD_FLOAT ),
 
 	DEFINE_FIELD( m_bInCombat, FIELD_BOOLEAN ),
-	DEFINE_FIELD( m_bDejected, FIELD_BOOLEAN ),
+	DEFINE_FIELD( m_bIncap, FIELD_BOOLEAN ),
 
 	DEFINE_FIELD( m_iTimesDejected, FIELD_INTEGER ),
-	DEFINE_FIELD( m_flGetUpProgress, FIELD_FLOAT ),
+	DEFINE_FIELD( m_flHelpProgress, FIELD_FLOAT ),
+	DEFINE_FIELD( m_flClimbingHold, FIELD_FLOAT ),
 
 	DEFINE_FIELD( m_flNextPainSound, FIELD_FLOAT ),
 	DEFINE_FIELD( m_flNextDyingSound, FIELD_FLOAT ),
@@ -127,8 +162,8 @@ BEGIN_DATADESC( CIN_Player )
 	DEFINE_FIELD( m_iEyeAngleZ, FIELD_INTEGER ),
 END_DATADESC()
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 
 static CTEPlayerAnimEvent g_TEPlayerAnimEvent( "PlayerAnimEvent" );
 
@@ -142,24 +177,25 @@ void TE_PlayerAnimEvent( CBasePlayer *pPlayer, PlayerAnimEvent_t event, int nDat
 	g_TEPlayerAnimEvent.Create( filter, 0 );
 }
 
-//=========================================================
+//====================================================================
 // Permite la creación del Jugador 
 // desde este tipo de clase.
-//=========================================================
-CIN_Player *CIN_Player::CreatePlayer( const char *pClassName, edict_t *e )
+//====================================================================
+CIN_Player *CIN_Player::CreatePlayer( const char *pClassName, edict_t *pEdict, const char *pPlayerName )
 {
-	CIN_Player::s_PlayerEdict = e;
-	return ( CIN_Player *)CreateEntityByName( pClassName );
+	CBasePlayer::s_PlayerEdict = pEdict;
+
+	CIN_Player *pPlayer = ( CIN_Player * )CreateEntityByName( pClassName );
+	pPlayer->SetPlayerName( pPlayerName );
+
+	return pPlayer;
 }
 
-//=========================================================
-// ConstructorWeaponIdle
-//=========================================================
+//====================================================================
+// Constructor
+//====================================================================
 CIN_Player::CIN_Player()
 {
-	// Creamos el manejador de animaciones
-	m_nAnimState = CreatePlayerAnimationState( this );
-
 	// Las animaciones se calculan en el cliente
 	UseClientSideAnimation();
 
@@ -167,42 +203,54 @@ CIN_Player::CIN_Player()
 	m_angEyeAngles.Init();
 }
 
-//=========================================================
+//====================================================================
 // Destructor
-//=========================================================
+//====================================================================
 CIN_Player::~CIN_Player()
 {
 	if ( m_nAnimState )
 		m_nAnimState->Release();
+
+	// Eliminamos nuestro inventario
+	if ( m_nPlayerInventory )
+		UTIL_Remove( m_nPlayerInventory );
 }
 
-//=========================================================
+//=====================================================================
+// Crea el procesador de animaciones
+//=====================================================================
+void CIN_Player::CreateAnimationState()
+{
+	m_nAnimState = CreatePlayerAnimationState( this );
+}
+
+//====================================================================
 // Devuelve si el jugador esta presionando un botón.
-//=========================================================
+//====================================================================
 bool CIN_Player::IsPressingButton( int iButton )
 {
 	return ((m_nButtons & iButton)) ? true : false;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el jugador ha presionado un botón.
-//=========================================================
+//====================================================================
 bool CIN_Player::IsButtonPressed( int iButton )
 {
 	return ((m_afButtonPressed & iButton)) ? true : false;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el jugador ha dejado de presionar un botón.
-//=========================================================
+//====================================================================
 bool CIN_Player::IsButtonReleased( int iButton )
 {
 	return ((m_afButtonReleased & iButton)) ? true : false;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el valor de un comando de cliente/servidor
-//=========================================================
+//====================================================================
 const char *CIN_Player::GetConVar( const char *pName )
 {
 	// Comando de cliente
@@ -217,29 +265,43 @@ const char *CIN_Player::GetConVar( const char *pName )
 	return engine->GetClientConVarValue( entindex(), pName );
 }
 
-//=========================================================
+//====================================================================
 // Ejecuta un comando
-//=========================================================
+//====================================================================
 void CIN_Player::ExecCommand( const char *pName )
 {
 	engine->ClientCommand( edict(), pName );
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+// Envia una lección del Instructor de Juego
+//====================================================================
+void CIN_Player::SendLesson( const char *pLesson, bool bOnce, CBaseEntity *pSubject )
+{
+	PlysManager->SendLesson( pLesson, this, bOnce, pSubject );
+}
+
+//====================================================================
+//====================================================================
 int CIN_Player::UpdateTransmitState()
 {
 	return SetTransmitState( FL_EDICT_ALWAYS );
 }
 
-//=========================================================
+//====================================================================
 // Creación por primera vez.
-//=========================================================
+//====================================================================
 void CIN_Player::InitialSpawn()
 {
 	m_takedamage	= DAMAGE_YES;
 	pl.deadflag		= false;
 	m_lifeState		= LIFE_ALIVE;
+
+	// Creamos el procesador de animaciones
+	CreateAnimationState();
+
+	// Creamos nuestro inventario
+	m_nPlayerInventory = CreatePlayerInventory( this );
 
 	// No somos invisibles
 	RemoveEffects( EF_NODRAW );
@@ -254,9 +316,9 @@ void CIN_Player::InitialSpawn()
 	SetThink( NULL );
 }
 
-//=========================================================
+//====================================================================
 // Creación en el mapa
-//=========================================================
+//====================================================================
 void CIN_Player::Spawn()
 {
 	// 
@@ -278,6 +340,7 @@ void CIN_Player::Spawn()
 	// Cronometros
 	m_nSlowTime.Invalidate();
 	m_nFinishCombat.Invalidate();
+	m_nFinishUnderAttack.Invalidate();
 
 	// Más información
 	m_flSanity			= 100.0f;
@@ -289,20 +352,27 @@ void CIN_Player::Spawn()
 	m_iEyeAngleZ		= 0;
 	m_nRagdoll			= NULL;
 
-	m_bDejected			= false;
+	m_bIncap			= false;
+	m_bClimbingToHell	= false;
 	m_iTimesDejected	= 0;
 
 	m_iLastNavAreaIndex	= 0;
 	m_iNextNavCheck		= gpGlobals->curtime;
+	m_iNextDejectedHurt	= gpGlobals->curtime;
+
+	m_nLessonsList.Purge();
 
 	// Paramos la Música
 	StopMusic();
 
 	// Ya no estamos abatidos
-	StopDejected();
+	StopIncap();
 
 	// Spawn!
 	BaseClass::Spawn();
+
+	// Estas en el suelo
+	AddFlag( FL_ONGROUND );
 
 	// Establecemos el modelo.
 	SetModel( GetPlayerModel() );
@@ -314,28 +384,34 @@ void CIN_Player::Spawn()
 	}	
 }
 
-//=========================================================
+//====================================================================
 // Creación en el mapa [Modo Multiplayer]
-//=========================================================
+//====================================================================
 void CIN_Player::SpawnMultiplayer()
 {	
 }
 
-//=========================================================
+//====================================================================
 // Guarda objetos necesarios en caché.
-//=========================================================
+//====================================================================
 void CIN_Player::Precache()
 {
 	BaseClass::Precache();
 
-	PrecacheModel( "sprites/glow01.vmt" );
-	PrecacheModel( "models/player.mdl" ); // Usado también para la generación de nodos
+	// Este modelo es importante, no lo usamos visualmente pero si en el código (Como para generar nodos de movimiento)
+	PrecacheModel( "models/player.mdl" );
+
+	PrecacheMaterial( "sprites/light_glow01" );
+	PrecacheMaterial( "sprites/glow01" );
+	PrecacheMaterial( "sprites/spotlight01_proxyfade" );
+
 	PrecacheMaterial( "effects/flashlight_border" );
 	PrecacheMaterial( "effects/flashlight001" );
-
-	PrecacheScriptSound("Player.FlashLightOn");
-	PrecacheScriptSound("Player.FlashLightOff");
-	PrecacheScriptSound("Player.Dying.Minor"); // FIXME
+	PrecacheMaterial( "effects/muzzleflash_light" );
+	
+	PrecacheScriptSound( "Player.FlashLightOn" );
+	PrecacheScriptSound( "Player.FlashLightOff" );
+	PrecacheScriptSound( "Player.Dying.Minor" ); // FIXME
 
 	// Modelo del Jugador
 	PrecacheModel( GetPlayerModel() );
@@ -347,15 +423,15 @@ void CIN_Player::Precache()
 	}
 }
 
-//=========================================================
+//====================================================================
 // Guarda objetos necesarios en caché para el modo Multiplayer
-//=========================================================
+//====================================================================
 void CIN_Player::PrecacheMultiplayer()
 {
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void CIN_Player::PreThink()
 {
 	// Estamos en un vehiculo.
@@ -379,16 +455,16 @@ void CIN_Player::PreThink()
 	BaseClass::PreThink();
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void CIN_Player::PostThink()
 {
 	// PostThink!
 	BaseClass::PostThink();
 
-	QAngle qAngles = GetLocalAngles();
-	qAngles[PITCH] = 0;
-	SetLocalAngles( qAngles );
+	QAngle angles = GetLocalAngles();
+	angles[PITCH] = 0;
+	SetLocalAngles( angles );
 
 	// Guardamos el angulo de los ojos y lo enviamos al cliente.
 	m_angEyeAngles = EyeAngles();
@@ -401,14 +477,17 @@ void CIN_Player::PostThink()
 		// Regeneración de vida
 		UpdateHealthRegeneration();
 
+		// Incapacitación
+		UpdateIncap();
+
+		// Energía
+		UpdateStamina();
+
 		// Velocidad
 		UpdateSpeed();
 
 		// Cordura
 		UpdateSanity();
-
-		// Energía
-		UpdateStamina();
 
 		// Sonidos
 		UpdateSounds();
@@ -419,24 +498,70 @@ void CIN_Player::PostThink()
 		// Caida
 		UpdateFallEffects();
 
-		// En combate?
+		// ¿Caeremos o estamos colgando?
+		UpdateFallToHell();
+
+		// ¿En combate?
 		if ( m_nFinishCombat.HasStarted() && !m_nFinishCombat.IsElapsed() )
 			m_bInCombat = true;
 		else
 			m_bInCombat = false;
 
+		// ¿Bajo ataque?
+		if ( m_nFinishUnderAttack.HasStarted() && !m_nFinishUnderAttack.IsElapsed() )
+			m_bUnderAttack = true;
+		else
+			m_bUnderAttack = false;
+
 		// ¿En donde estamos?
 		if ( gpGlobals->curtime > m_iNextNavCheck )
 		{
 			UpdateLastKnownArea();
-			m_iNextNavCheck = gpGlobals->curtime + 0.8f;
+			m_iNextNavCheck = NEXT_NAV_CHECK;
 		}
 	}
 }
 
-//=========================================================
+//====================================================================
+// El Jugador trata de usar algo
+//====================================================================
+void CIN_Player::PlayerUse()
+{
+	BaseClass::PlayerUse();
+
+	// Was use pressed or released?
+	if ( ! ((m_nButtons | m_afButtonPressed | m_afButtonReleased) & IN_USE) )
+		return;
+
+	// Somos un espectador
+	if ( IsObserver() )
+		return;
+
+	CBaseEntity *pUseEntity = FindUseEntity();
+
+	// Verificamos si la entidad que tratamos de usar es un arma
+	if ( pUseEntity && IsAllowedToPickupWeapons() )
+	{
+		CBaseInWeapon *pWeapon = dynamic_cast<CBaseInWeapon *>( pUseEntity );
+
+		if ( pWeapon )
+		{
+			// Ya la tenemos, solo recojeremos su munición
+			if ( Weapon_OwnsThisType( pWeapon->GetClassname(), pWeapon->GetSubType() ) )
+				Weapon_EquipAmmoOnly( pWeapon );
+
+			// Recojeremos el arma
+			else
+			{
+				Weapon_Equip( pWeapon );
+			}
+		}
+	}
+}
+
+//====================================================================
 // Devuelve el Model pedido por el Jugador
-//=========================================================
+//====================================================================
 const char *CIN_Player::GetPlayerModel()
 {
 	// Estamos en el Modo Historia
@@ -446,9 +571,9 @@ const char *CIN_Player::GetPlayerModel()
 	return GetPlayerModelValidated();
 }
 
-//=========================================================
+//====================================================================
 // Valida y establece el modelo del jugador
-//=========================================================
+//====================================================================
 const char *CIN_Player::GetPlayerModelValidated()
 {
 	const char *pPlayerModel = GetConVar( "cl_playermodel" );
@@ -468,9 +593,9 @@ const char *CIN_Player::GetPlayerModelValidated()
 	return pPlayerModel;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el modelo es válido
-//=========================================================
+//====================================================================
 bool CIN_Player::IsValidModel( const char *pModel )
 {
 	// Usemos el modelo que ha seleccionado el jugador
@@ -487,23 +612,23 @@ bool CIN_Player::IsValidModel( const char *pModel )
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Prepara la música del jugador
-//=========================================================
+//====================================================================
 void CIN_Player::PrepareMusic()
 {
 }
 
-//=========================================================
+//====================================================================
 // Para la música del jugador
-//=========================================================
+//====================================================================
 void CIN_Player::StopMusic()
 {
 }
 
-//=========================================================
+//====================================================================
 // Reproduce el Script de sonido de acuerdo al modelo del jugador
-//=========================================================
+//====================================================================
 void CIN_Player::EmitPlayerSound( const char *pSoundName )
 {
 	const char *pRealSoundName	= UTIL_VarArgs("%s.%s", GetPlayerType(), pSoundName);
@@ -529,67 +654,74 @@ void CIN_Player::EmitPlayerSound( const char *pSoundName )
 	EmitSound( filter, entindex(), ep );
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void CIN_Player::StopPlayerSound( const char *pSoundName )
 {
 	const char *pRealSoundName	= UTIL_VarArgs("%s.%s", GetPlayerType(), pSoundName);
 	StopSound( pRealSoundName );
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el tipo de jugador
-//=========================================================
+//====================================================================
 const char *CIN_Player::GetPlayerType()
 {
 	// TODO
-	return "Player";
+	return "Abigail";
 }
 
-//=========================================================
+//====================================================================
 // Sonido de dolor
-//=========================================================
+//====================================================================
 void CIN_Player::PainSound( const CTakeDamageInfo &info )
 {
 	
 }
 
-//=========================================================
+//====================================================================
 // Sonido de poca salud ¡me muero!
-//=========================================================
+//====================================================================
 void CIN_Player::DyingSound()
 {
 	
 }
 
-//=========================================================
+//====================================================================
 // Sonido al morir
-//=========================================================
+//====================================================================
 void CIN_Player::DieSound()
 {
 	// Mi cadaver se esta disolviendo
 	if ( m_nRagdoll && m_nRagdoll->GetBaseAnimating()->IsDissolving() )
 		 return;
 
+	if ( !InRules->FCanPlayDeathSound(m_nLastDamageInfo) )
+		return;
+
 	EmitPlayerSound("Death");
 }
 
-//=========================================================
+//====================================================================
 // Actualiza las voces/sonidos
-//=========================================================
+//====================================================================
 void CIN_Player::UpdateSounds()
 {
 	// Sufro!
 	DyingSound();
 }
 
-//=========================================================
+//====================================================================
 // Enciende la linterna.
-//=========================================================
+//====================================================================
 bool CIN_Player::FlashlightTurnOn( bool playSound )
 {
 	// No podemos encender la linterna
 	if ( !InRules->FAllowFlashlight() )
+		return false;
+
+	// Ya esta encendida
+	if ( FlashlightIsOn() )
 		return false;
 
 	AddEffects( EF_DIMLIGHT );
@@ -600,28 +732,116 @@ bool CIN_Player::FlashlightTurnOn( bool playSound )
 	return true;
 }
 
-//=========================================================
+//====================================================================
 // Apaga la linterna.
-//=========================================================
+//====================================================================
 void CIN_Player::FlashlightTurnOff( bool playSound )
 {
+	// No esta encendida
+	if ( !FlashlightIsOn() )
+		return;
+
 	RemoveEffects( EF_DIMLIGHT );
 
 	if ( playSound )
 		EmitSound("Player.FlashLightOff");
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si la linterna esta encendida.
-//=========================================================
+//====================================================================
 int CIN_Player::FlashlightIsOn()
 {
 	return IsEffectActive( EF_DIMLIGHT );
 }
 
-//=========================================================
+//====================================================================
+// Devuelve el arma de clasificación primaria
+//====================================================================
+CBaseInWeapon *CIN_Player::GetPrimaryWeapon()
+{
+	for ( int i = 0; i < WeaponCount(); i++ )
+	{
+		CBaseInWeapon *pWeapon = ( CBaseInWeapon * )GetWeapon( i );
+
+		if ( !pWeapon )
+			continue;
+
+		if ( pWeapon->GetWeaponClass() == CLASS_PRIMARY_WEAPON )
+			return pWeapon;
+	}
+
+	return NULL;
+}
+
+//====================================================================
+// Devuelve el arma de clasificación secundaria
+//====================================================================
+CBaseInWeapon *CIN_Player::GetSecondaryWeapon()
+{
+	for ( int i = 0; i < WeaponCount(); i++ )
+	{
+		CBaseInWeapon *pWeapon = ( CBaseInWeapon * )GetWeapon( i );
+
+		if ( !pWeapon )
+			continue;
+
+		if ( pWeapon->GetWeaponClass() == CLASS_SECONDARY_WEAPON )
+			return pWeapon;
+	}
+
+	return NULL;
+}
+
+//====================================================================
+//====================================================================
+void CIN_Player::Weapon_Equip( CBaseCombatWeapon *pWeapon )
+{
+	CBaseInWeapon *pInWeapon = (CBaseInWeapon *)pWeapon;
+
+	if ( !pInWeapon )
+		return;
+
+	if ( WEAPON_SINGLE )
+	{
+		// Tiramos el arma de esta clasificación
+		Weapon_DropClass( pInWeapon->GetWeaponClass() );
+	}
+
+	// No es un arma cuerpo a cuerpo, entonces recuerda apuntar
+	if ( pWeapon->UsesClipsForAmmo1() )
+		SendLesson( "hint_ironsight", true );
+
+	BaseClass::Weapon_Equip( pWeapon );
+}
+
+//====================================================================
+//====================================================================
+void CIN_Player::Weapon_DropClass( int iWeaponClass )
+{
+	CBaseInWeapon *pWeapon = NULL;
+
+	switch ( iWeaponClass )
+	{
+		case CLASS_PRIMARY_WEAPON:
+			pWeapon = GetPrimaryWeapon();
+		break;
+
+		case CLASS_SECONDARY_WEAPON:
+			pWeapon = GetSecondaryWeapon();
+		break;
+	}
+
+	if ( !pWeapon )
+		return;
+
+	// Tiramos el arma
+	Weapon_Drop( pWeapon, NULL, NULL );
+}
+
+//====================================================================
 // [Evento] El jugador ha recibido daño
-//=========================================================
+//====================================================================
 int CIN_Player::OnTakeDamage( const CTakeDamageInfo &info )
 {
 	// Último daño hecho
@@ -630,13 +850,25 @@ int CIN_Player::OnTakeDamage( const CTakeDamageInfo &info )
 	return BaseClass::OnTakeDamage( info );
 }
 
-//=========================================================
+//====================================================================
 // [Evento] El jugador ha recibido daño pero sigue vivo
-//=========================================================
+//====================================================================
 int CIN_Player::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 {
-	// Predecimos cual será nuestra salud después de recibir el daño
-	int iNewHealth = GetHealth() - info.GetDamage();
+	// Mi atacante es un jugador
+	if ( info.GetAttacker() && info.GetAttacker()->IsPlayer() )
+	{
+		CIN_Player *pAttacker = ToInPlayer( info.GetAttacker() );
+
+		// No debemos recibir daño de fuego amigo de un BOT
+		if ( pAttacker != this && InRules->PlayerRelationship(this, pAttacker) == GR_TEAMMATE && pAttacker->IsFakeClient() )
+		{
+			return 0;
+		}
+	}
+
+	// Nuestra salud después de recibir el daño
+	int newHealth = GetHealth() - info.GetDamage();
 
 	// El daño nos hace lentos
 	if ( InRules->DamageCanMakeSlow(info) )
@@ -646,21 +878,40 @@ int CIN_Player::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	RemoveSanity( 5.0f );
 
 	// Efectos ¡Ouch!
-	color32 red = {211, 0, 0, 130}; // Rojo
+	color32 red = {211, 0, 0, 100}; // Rojo
 	UTIL_ScreenFade( this, red, 0.4, 0, FFADE_IN );
 	
 	// Ouch!
 	PainSound( info );
 
 	// Estaremos muertos con este daño
-	if ( iNewHealth <= 0 && InRules->FPlayerCanDejected(this) )
+	if ( newHealth <= 0 && InRules->FPlayerCanDejected(this, info) )
 	{
 		// ¡Nos han abatido!
-		if ( !m_bDejected && m_iTimesDejected <= 2 )
+		if ( !IsIncap() )
 		{
-			StartDejected();
-			return 0;
+			if ( m_iTimesDejected < 2 )
+			{
+				StartIncap();
+				return 0;
+			}
 		}
+		else
+		{
+			// Estabamos trepando
+			if ( IsClimbingIncap() )
+			{
+				// Te espera la muerte abajo...
+				m_flClimbingHold = -5.0f;
+				return 0;
+			}
+		}
+	}
+
+	// ¡Estamos bajo ataque!
+	if ( info.GetDamageType() & (DMG_BULLET | DMG_SLASH) )
+	{
+		m_nFinishUnderAttack.Start( 3 );
 	}
 
 	// Flinch
@@ -695,9 +946,9 @@ int CIN_Player::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	return BaseClass::OnTakeDamage_Alive( info );
 }
 
-//=========================================================
-// [Evento] El jugador ha muerto.
-//=========================================================
+//====================================================================
+// [Evento] El jugador ha muerto
+//====================================================================
 void CIN_Player::Event_Killed( const CTakeDamageInfo &info )
 {
 	CSound *pSound			= CSoundEnt::SoundPointerForIndex( CSoundEnt::ClientSoundIndex(edict()) );
@@ -720,6 +971,9 @@ void CIN_Player::Event_Killed( const CTakeDamageInfo &info )
 
 	// Paramos la música
 	StopMusic();
+
+	// Ya no estamos incapacitados
+	StopIncap();
 
 	// Reiniciamos el sonido
 	if ( pSound )
@@ -764,9 +1018,9 @@ void CIN_Player::Event_Killed( const CTakeDamageInfo &info )
 		DoAnimationEvent( PLAYERANIMEVENT_DIE );
 }
 
-//=========================================================
+//====================================================================
 // Pensamiento cuando el Jugador ha muerto
-//=========================================================
+//====================================================================
 void CIN_Player::PlayerDeathThink()
 {
 	// Volvemos a pensar en 0.1s
@@ -792,19 +1046,18 @@ void CIN_Player::PlayerDeathThink()
 	if ( HasWeapons() )
 		PackDeadPlayerItems();
 
-	// Esperamos a que nuestra animación de muerte se complete
-	if ( GetModelIndex() && !IsSequenceFinished() && (m_lifeState == LIFE_DYING) && InRules->CanPlayDeathAnim(this, m_nLastDamageInfo) )
-	{
-		++m_iRespawnFrames;
-
-		// En caso de que ocurra un error con la animación esto evitará que nos quedemos en este estado
-		if ( m_iRespawnFrames < 60 )
-			return;
-	}
-
-	// Nuestra animación de muerte ha terminado, hemos muerto definitivamente
+	// Seguimos esperando a que termine nuestra animación de muerte
 	if ( m_lifeState == LIFE_DYING )
 	{
+		if ( GetModelIndex() && !IsSequenceFinished() && InRules->CanPlayDeathAnim(this, m_nLastDamageInfo) )
+		{
+			++m_iRespawnFrames;
+
+			// En caso de que ocurra un error con la animación esto evitará que nos quedemos en este estado
+			if ( m_iRespawnFrames < 60 )
+				return;
+		}
+
 		// Creamos nuestro cadaver
 		CreateRagdollEntity( m_nLastDamageInfo );
 
@@ -834,10 +1087,10 @@ void CIN_Player::PlayerDeathThink()
 	PlayerDeathPostThink();
 }
 
-//=========================================================
+//====================================================================
 // Pensamiento cuando el Jugador ha muerto y listo para
 // respawnear
-//=========================================================
+//====================================================================
 void CIN_Player::PlayerDeathPostThink()
 {
 	// Este Jugador no puede reaparecer
@@ -845,13 +1098,13 @@ void CIN_Player::PlayerDeathPostThink()
 		return;
 
 	// ¿Hemos presionado algún boton?
-	int iAnyButtonDown = ( m_nButtons & ~IN_SCORE );
+	int anyButtonDown = ( m_nButtons & ~IN_SCORE );
 
 	// ¡Podemos reaparecer!
 	m_lifeState = LIFE_RESPAWNABLE;
 
 	// ¿Podemos reaparecer ya?
-	bool bCanRespawn = InRules->FPlayerCanRespawnNow(this);
+	bool canRespawnNow = InRules->FPlayerCanRespawnNow( this );
 
 	//
 	// Modo Historia
@@ -866,8 +1119,8 @@ void CIN_Player::PlayerDeathPostThink()
 		}
 
 		// Debemos presionar un botón para reaparecer
-		if ( !iAnyButtonDown && bCanRespawn )
-			bCanRespawn = false;
+		if ( !anyButtonDown && canRespawnNow )
+			canRespawnNow = false;
 	}
 
 	//
@@ -876,7 +1129,7 @@ void CIN_Player::PlayerDeathPostThink()
 	else
 	{
 		// Pasamos a modo espectador ( Camara libre o mirando a los jugadores )
-		if ( gpGlobals->curtime > GetDeathTime() + wait_deathcam.GetFloat() )
+		if ( gpGlobals->curtime > GetDeathTime() + wait_deathcam.GetFloat() && !IsObserver() )
 		{
 			CIN_Player *pSpectate = NULL;
 			pSpectate = PlysManager->GetNear( GetAbsOrigin(), GetTeamNumber() );
@@ -889,7 +1142,7 @@ void CIN_Player::PlayerDeathPostThink()
 	}
 
 	// Ya podemos reaparecer
-	if ( bCanRespawn )
+	if ( canRespawnNow )
 	{
 		SetNextThink( TICK_NEVER_THINK );
 		respawn( this, false );
@@ -899,9 +1152,9 @@ void CIN_Player::PlayerDeathPostThink()
 	}
 }
 
-//=========================================================
-// Crea el cadaver del jugador al morir.
-//=========================================================
+//====================================================================
+// Crea el cadaver del jugador al morir
+//====================================================================
 void CIN_Player::CreateRagdollEntity( const CTakeDamageInfo &info )
 {
 	// Eliminamos nuestro último cadaver
@@ -910,11 +1163,8 @@ void CIN_Player::CreateRagdollEntity( const CTakeDamageInfo &info )
 
 	// Creamos un cadaver Server-side
 	// FIXME: Cadaveres client-side
-	m_nRagdoll = CreateServerRagdoll( this, m_nForceBone, info, COLLISION_GROUP_INTERACTIVE_DEBRIS );
-	m_nRagdoll->SetAbsAngles( m_nAnimState->m_angRender );
-	m_nRagdoll->SetAbsOrigin( m_vecDeathOrigin );
+	m_nRagdoll = CreateServerRagdoll( this, m_nForceBone, info, COLLISION_GROUP_DEBRIS );
 	
-
 	/*
 	CIN_Ragdoll *pRagdoll = ToRagdoll( m_nRagdoll.Get() );
 
@@ -943,101 +1193,10 @@ void CIN_Player::CreateRagdollEntity( const CTakeDamageInfo &info )
 	*/
 }
 
-//=========================================================
-// El Jugador ha sido abatido
-//=========================================================
-void CIN_Player::StartDejected()
-{
-	// Desactivamos el movimiento y la capacidad de saltar/agacharse
-	DisableButtons( IN_JUMP | IN_DUCK );
-	DisableMovement();
 
-	// Hemos caido
-	if ( !m_bDejected )
-	{
-		// Restauramos nuestra salud
-		SetHealth( GetMaxHealth() );
-
-		// No es lógico que digamos esto si estamos solos
-		if ( InRules->IsMultiplayer() )
-			EmitPlayerSound("Start.Dejected");
-
-		++m_iTimesDejected;
-	}
-
-	m_bDejected			= true;
-	m_flGetUpProgress	= 0.0f;
-
-	// Ajustamos la vista
-	SetViewOffset( InRules->GetInViewVectors()->m_nVecDejectedView );
-}
-
-//=========================================================
-// El Jugador ha sido revivido
-//=========================================================
-void CIN_Player::StopDejected()
-{
-	// Activamos el movimiento y los botones
-	EnableButtons( IN_JUMP | IN_DUCK );
-	EnableMovement();
-
-	m_bDejected = false;
-
-	// Restauramos la vista
-	SetViewOffset( InRules->GetInViewVectors()->m_vView );
-}
-
-//=========================================================
-// Alguien nos esta ayudando
-//=========================================================
-void CIN_Player::GetUp( CIN_Player *pPlayer )
-{
-	m_flGetUpProgress += 0.5f;
-	DevMsg("[CIN_Player::GetUp] %s esta ayudando a %s (%f) \n", pPlayer->GetPlayerName(), GetPlayerName(), m_flGetUpProgress);
-
-	Vector vecView = InRules->GetInViewVectors()->m_nVecDejectedView;
-	vecView.z += 0.47 * m_flGetUpProgress;
-
-	// Efecto de "levantarse"
-	SetViewOffset( vecView );
-
-	// ¡Arriba!
-	if ( m_flGetUpProgress >= 100.0f )
-	{
-		StopDejected();
-		m_flGetUpProgress = 0.0f;
-	}
-}
-
-//=========================================================
-//=========================================================
-void CIN_Player::UpdateSanity()
-{
-	// Tenemos el nivel de cordura llena
-	if ( m_flSanity >= 100.0f )
-		return;
-
-	if ( InCombat() )
-		m_flSanity += 0.3 * gpGlobals->frametime;
-	else
-		m_flSanity += 3.5f * gpGlobals->frametime;
-}
-
-//=========================================================
-// Agrega estres al jugador
-//=========================================================
-void CIN_Player::RemoveSanity( float flValue )
-{
-	m_flSanity -= flValue;
-
-	if ( m_flSanity <= 0.0f )
-		m_flSanity = 0.0f;
-}
-
-#define STAMINA_INFINITE stamina_infinite.GetBool()
-
-//=========================================================
-//=========================================================
+//====================================================================
+// Pensamiento: Actualiza el aguante del Jugador
+//====================================================================
 void CIN_Player::UpdateStamina()
 {
 	// No estas usando tu aguante
@@ -1056,12 +1215,12 @@ void CIN_Player::UpdateStamina()
 		if ( m_flStamina < 0.0f )
 			return;
 
-		m_flStamina -= 10 * gpGlobals->frametime;
+		m_flStamina -= STAMINA_DRAIN * gpGlobals->frametime;
 	}
 
 	// No tienes suficiente energía
-	if ( m_flStamina <= 10.0f )
-		StopSprint();
+	//if ( m_flStamina <= 10.0f )
+		//StopSprint();
 
 	// Evitamos valores inválidos
 	if ( m_flStamina <= -1 )
@@ -1070,13 +1229,17 @@ void CIN_Player::UpdateStamina()
 		m_flStamina = 100.0f;
 }
 
-//=========================================================
-// Procesa la regeneración de salud
-//=========================================================
+//====================================================================
+// Pensamiento: Actualiza la regenación de salud
+//====================================================================
 void CIN_Player::UpdateHealthRegeneration()
 {
 	// La regeneración esta desactivada
-	if ( !health_regeneration.GetBool() )
+	if ( !HEALTH_REGEN )
+		return;
+
+	// Estamos incapacitados
+	if ( IsIncap() )
 		return;
 
 	// No hay regeneración de salud en Dificil
@@ -1087,32 +1250,32 @@ void CIN_Player::UpdateHealthRegeneration()
 	if ( gpGlobals->curtime <= m_iNextRegeneration )
 		return;
 
-	int iAdd = health_regeneration_add.GetInt();
+	int toRecover = HEALTH_REGEN_RECOVER;
 
 	// 2 más en Fácil
 	if ( InRules->IsSkillLevel(SKILL_EASY) )
-		iAdd += 2;
+		toRecover += 2;
 
-	TakeHealth( iAdd, DMG_GENERIC );
-	m_iNextRegeneration = gpGlobals->curtime + health_regeneration_wait.GetFloat();
+	TakeHealth( toRecover, DMG_GENERIC );
+	m_iNextRegeneration = HEALTH_REGEN_INTERVAL;
 }
 
-//=========================================================
-// Actualiza los efectos de cansancio
-//=========================================================
+//====================================================================
+// Pensamiento: Actualiza los efectos de cansancio
+//====================================================================
 void CIN_Player::UpdateTiredEffects()
 {
-	color32 black = {0, 0, 0, 255};
+	color32 black = { 0, 0, 0, 255 };
 
 	//
 	// Estamos incapacitados
 	//
-	if ( m_bDejected )
+	if ( IsIncap() )
 	{
 		SnapEyeAnglesZ( 10 );
 
 		// Cerramos los ojos
-		if ( gpGlobals->curtime >= m_iNextFadeout )
+		if ( gpGlobals->curtime >= m_iNextFadeout && !IsClimbingIncap() && GetHealth() > 30 )
 		{
 			UTIL_ScreenFade( this, black, 1.0f, 0.5f, FFADE_IN );
 			m_iNextFadeout = gpGlobals->curtime + RandomInt(3, 10);
@@ -1121,16 +1284,18 @@ void CIN_Player::UpdateTiredEffects()
 		return;
 	}
 	
+	//
 	// Tenemos menos de 30% de salud
-	if ( m_iHealth <= 30 )
+	//
+	if ( GetHealth() <= 30 )
 	{
 		SnapEyeAnglesZ( 3 );
 
 		// Encerio, nos duele
 		if ( gpGlobals->curtime >= m_iNextEyesHurt )
 		{
-			int angHealth = (70 - m_iHealth) / 8;
-			ViewPunch(QAngle(RandomInt(2.0, angHealth), RandomInt(2.0, angHealth), RandomInt(2.0, angHealth)));
+			int angHealth = ( 70 - GetHealth() ) / 8;
+			ViewPunch( QAngle(RandomFloat(2.0, angHealth), RandomFloat(2.0, angHealth), RandomFloat(2.0, angHealth)) );
 
 			m_iNextEyesHurt = gpGlobals->curtime + RandomInt(5, 15);
 		}
@@ -1141,23 +1306,300 @@ void CIN_Player::UpdateTiredEffects()
 	}
 }
 
-//=========================================================
+//====================================================================
 // Actualiza los efectos de una GRAN caida
-//=========================================================
+//====================================================================
 void CIN_Player::UpdateFallEffects()
 {
 
 }
 
-//=========================================================
+//====================================================================
+// Actualiza y verifica si el Jugador va a caer
+//====================================================================
+void CIN_Player::UpdateFallToHell()
+{
+	// Ya te has quedado trepando
+	if ( m_bClimbingToHell )
+		return;
+
+	// Estas en el suelo
+	if ( IsInGround() )
+		return;
+
+	// Somos dios o estamos volando
+	if ( IsGod() || GetMoveType() != MOVETYPE_WALK )
+		return;
+
+	trace_t	frontTrace;
+	trace_t frontDownTrace;
+	trace_t downTrace;
+
+	// Obtenemos los vectores de las distintas posiciones
+	Vector vecForward, vecRight, vecUp, vecSrc;
+	GetVectors( &vecForward, &vecRight, &vecUp );
+
+	// Nuestra ubicación
+	vecSrc = GetAbsOrigin();
+
+	// Trazamos una linea de 50 delante nuestra
+	UTIL_TraceLine( vecSrc, vecSrc + vecForward * 50, MASK_PLAYERSOLID, this, COLLISION_GROUP_NONE, &frontTrace );
+
+	// Trazamos una línea de 600 hacia abajo de donde termina la línea delante
+	UTIL_TraceLine( frontTrace.endpos, frontTrace.endpos + -vecUp * CLIMB_HEIGHT_CHECK, MASK_PLAYERSOLID, this, COLLISION_GROUP_NONE, &frontDownTrace );
+
+	// Trazamos una línea de 600 hacia abajo de nosotros
+	UTIL_TraceLine( vecSrc, vecSrc + -vecUp * CLIMB_HEIGHT_CHECK, MASK_PLAYERSOLID, this, COLLISION_GROUP_NONE, &downTrace );
+
+	// El salto es seguro
+	if ( frontDownTrace.fraction != 1.0 || downTrace.fraction != 1.0 )
+		return;
+
+	StartIncap( true );
+}
+
+
+//====================================================================
+// El Jugador ha sido incapacitado
+//====================================================================
+void CIN_Player::StartIncap( bool bClimbing )
+{
+	// Desactivamos el movimiento y la capacidad de saltar/agacharse
+	DisableButtons( IN_JUMP | IN_DUCK );
+	DisableMovement();
+
+	// Hemos caido
+	if ( !m_bIncap )
+	{
+		// Restauramos nuestra salud
+		SetHealth( GetMaxHealth() );
+		SetHullType( HULL_WIDE_SHORT );
+
+		// No es lógico que digamos esto si estamos solos
+		if ( InRules->IsMultiplayer() && !bClimbing )
+			EmitPlayerSound("Start.Dejected");
+
+		++m_iTimesDejected;
+	}
+
+	// Hemos quedado trepando
+	if ( bClimbing )
+	{
+		StartClimbIncap();
+	}
+	else
+	{
+		// Ajustamos la vista
+		SetViewOffset( InRules->GetInViewVectors()->m_nVecDejectedView );
+	}
+
+	m_bIncap			= true;
+	m_flHelpProgress	= 0.0f;
+
+	OnStartIncap();
+}
+
+//===============================================================================
+// El Jugador ha sido revivido
+//===============================================================================
+void CIN_Player::StopIncap()
+{
+	// Activamos el movimiento y los botones
+	EnableButtons( IN_JUMP | IN_DUCK | IN_ATTACK | IN_ATTACK2 );
+	EnableMovement();
+
+	m_bIncap				= false;
+	m_bClimbingToHell		= false;
+	m_bWaitingGroundDeath	= false;
+
+	// Restauramos la mitad de la salud máxima
+	int newHealth = GetMaxHealth() / 2;
+
+	// En dificil restauramos solo 1/3
+	if ( InRules->IsSkillLevel(SKILL_HARD) )
+		newHealth = GetMaxHealth() / 3;
+
+	SetHealth( newHealth );
+
+	// Restauramos
+	SetHullType( HULL_HUMAN );
+	SetViewOffset( VEC_VIEW );
+
+	OnStopIncap();
+}
+
+//===============================================================================
+//===============================================================================
+void CIN_Player::StartClimbIncap()
+{
+	// Desactivamos los botones de ataque
+	DisableButtons( IN_ATTACK | IN_ATTACK2 );
+
+	// Estas trepando por tu vida
+	m_bClimbingToHell	= true;
+	m_flClimbingHold	= 350.0f;
+	
+	// Cambiamos el tipo de movimiento para que quede flotando
+	SetMoveType( MOVETYPE_FLY );
+	SetAbsVelocity( vec3_origin );
+}
+
+//===============================================================================
+//===============================================================================
+void CIN_Player::StopClimbIncap()
+{
+	// Te espera la muerte abajo...
+	m_bWaitingGroundDeath = true;
+
+	// Regresamos a la normalidad ¡cayendo!
+	SetMoveType( MOVETYPE_WALK );
+}
+
+//====================================================================
+// Pensamiento: Al estar incapacitado
+//====================================================================
+void CIN_Player::UpdateIncap()
+{
+	// No estamos incapacitados
+	if ( !IsIncap() )
+		return;
+
+	//
+	// Incapacitación en el suelo
+	//
+	if ( !IsClimbingIncap() )
+	{
+		// Pierdes vida por estar incapacitado
+		if ( gpGlobals->curtime >= m_iNextDejectedHurt )
+		{
+			int newHealth = GetHealth() - RandomInt(1, 3);
+
+			if ( newHealth > 0 )
+				SetHealth( newHealth );
+			else
+				TakeDamage( CTakeDamageInfo(this, this, 5, DMG_GENERIC) );
+
+			m_iNextDejectedHurt = gpGlobals->curtime + RandomInt( 3, 6 );
+		}
+
+		// Nos ayudamos a nosotros mismos
+		if ( IsPressingButton(IN_USE) )
+		{
+			HelpIncap( this );
+		}
+
+		return;
+	}
+
+	//
+	// Incapacitación por quedar colgando
+	//
+
+	// No debemos movernos
+	SetAbsVelocity( vec3_origin );
+
+	// Estabas esperando la muerte en el suelo
+	if ( IsWaitingGroundDeath() )
+	{
+		// Ya estas en el suelo
+		if ( IsInGround() )
+		{
+			// Iván: En ocaciones el código puede detectar erroneamente que el "siguiente paso" del Jugador
+			// es una caida hacia su muerte, por lo que no hay que ser injustos y en caso de que caiga a 
+			// una altura muy baja solo paramos el estado de incapacitación
+			StopIncap();
+		}
+	}
+
+	// ¡Sigues colgando!
+	else
+	{
+		// Presionar varias veces la tecla de uso ayuda
+		if ( IsButtonPressed(IN_USE) )
+		{
+			m_flClimbingHold += 0.5;
+		}
+
+		// ¡Vas perdiendo aguante!
+		m_flClimbingHold -= 8 * gpGlobals->frametime;
+
+		// ¡¡Ya no aguanto más!!
+		if ( m_flClimbingHold <= 0.0f )
+		{
+			// Te espera la muerte abajo...
+			StopClimbIncap();
+		}
+	}
+}
+
+//====================================================================
+// Alguien nos esta ayudando
+//====================================================================
+void CIN_Player::HelpIncap( CIN_Player *pPlayer )
+{
+	// No estas incapacitado
+	if ( !IsIncap() )
+		return;
+
+	m_flHelpProgress += 0.4f;
+
+	DevMsg( "[CIN_Player::GetUp] %s esta ayudando a %s (%f) \n", pPlayer->GetPlayerName(), GetPlayerName(), m_flHelpProgress );
+
+	Vector vecView = InRules->GetInViewVectors()->m_nVecDejectedView;
+	vecView.z += 0.47 * m_flHelpProgress;
+
+	// Efecto de "levantarse"
+	SetViewOffset( vecView );
+
+	// ¡Arriba!
+	if ( m_flHelpProgress >= 100.0f )
+	{
+		StopIncap();
+	}
+}
+
+//====================================================================
+// Pensamiento: Actualiza el nivel de cordura
+//====================================================================
+void CIN_Player::UpdateSanity()
+{
+	// Tenemos el nivel de cordura llena
+	if ( m_flSanity >= 100.0f )
+		return;
+
+	if ( InCombat() )
+		m_flSanity += 0.3 * gpGlobals->frametime;
+	else
+		m_flSanity += 3.5f * gpGlobals->frametime;
+}
+
+//====================================================================
+// Agrega estres al jugador
+//====================================================================
+void CIN_Player::RemoveSanity( float flValue )
+{
+	m_flSanity -= flValue;
+
+	if ( m_flSanity <= 0.0f )
+		m_flSanity = 0.0f;
+}
+
+//====================================================================
 // Actualiza la velocidad del jugador
-//=========================================================
+//====================================================================
 void CIN_Player::UpdateSpeed()
 {	
+	// Estamos incapacitados
+	if ( IsIncap() )
+	{
+		SetMaxSpeed( 1 );
+		return;
+	}
+
 	// Nos ha hecho daño algo que nos hace lentos
 	if ( m_nSlowTime.HasStarted() && !m_nSlowTime.IsElapsed() )
 	{
-		SetMaxSpeed( 80 );
+		SetMaxSpeed( 90 );
 		return;
 	}
 
@@ -1166,15 +1608,25 @@ void CIN_Player::UpdateSpeed()
 
 	// Estamos corriendo
 	if ( m_bIsSprinting )
+	{
 		flMax = PLAYER_RUN_SPEED;
+
+		// Estamos cansados
+		if ( GetStamina() <= 10.0f )
+		{
+			flMax -= 60.0f;
+		}
+	}
 
 	// Tenemos un arma
 	if ( GetActiveInWeapon() )
 	{
 		// Disminuimos nuestra velocidad según el peso del arma
-		flMax -= GetActiveInWeapon()->GetInWpnData().flSpeedWeight;
+		flMax -= GetActiveInWeapon()->GetInWpnData().m_flSpeedWeight;
 
-		// TODO: Ironsight
+		// Estamos apuntando
+		if ( GetActiveInWeapon()->IsIronsighted() )
+			flMax -= 35;
 	}
 
 	// Disminuimos la velocidad según nuestra salud
@@ -1193,37 +1645,37 @@ void CIN_Player::UpdateSpeed()
 	SetMaxSpeed( flMax );
 }
 
-//=========================================================
+//====================================================================
 // Comienza a correr
-//=========================================================
+//====================================================================
 void CIN_Player::StartSprint()
 {
 	// No te queda fuerza
-	if ( m_flStamina <= 10.0f )
-		return;
+	//if ( GetStamina() <= 10.0f )
+		//return;
 
 	m_bIsSprinting = true;
 }
 
-//=========================================================
+//====================================================================
 // Para de correr
-//=========================================================
+//====================================================================
 void CIN_Player::StopSprint()
 {
 	m_bIsSprinting = false;
 }
 
-//=========================================================
+//====================================================================
 // [Evento] Hemos saltado
-//=========================================================
+//====================================================================
 void CIN_Player::Jump()
 {
 	DoAnimationEvent( PLAYERANIMEVENT_JUMP );
 }
 
-//=========================================================
+//====================================================================
 // [Evento] Hemos cambiado nuestra ubicación
-//=========================================================
+//====================================================================
 void CIN_Player::OnNavAreaChanged( CNavArea *enteredArea, CNavArea *leftArea )
 {
 	BaseClass::OnNavAreaChanged( enteredArea, leftArea );
@@ -1234,9 +1686,9 @@ void CIN_Player::OnNavAreaChanged( CNavArea *enteredArea, CNavArea *leftArea )
 	AddLastKnowArea( enteredArea );
 }
 
-//=========================================================
+//====================================================================
 // Agrega la Area de Navegación a la lista de donde hemos estado
-//=========================================================
+//====================================================================
 void CIN_Player::AddLastKnowArea( CNavArea *pArea, bool bAround )
 {
 	// Reiniciamos el contador
@@ -1263,8 +1715,8 @@ void CIN_Player::AddLastKnowArea( CNavArea *pArea, bool bAround )
 	}
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 bool CIN_Player::InLastKnowAreas( CNavArea *pArea )
 {
 	for ( int i = 0; i <= ARRAYSIZE(m_nLastNavAreas); ++i )
@@ -1276,9 +1728,9 @@ bool CIN_Player::InLastKnowAreas( CNavArea *pArea )
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Crea el modelo en primera persona.
-//=========================================================
+//====================================================================
 void CIN_Player::CreateViewModel( int iIndex )
 {
 	// Ya ha sido creado.
@@ -1299,26 +1751,44 @@ void CIN_Player::CreateViewModel( int iIndex )
 	}
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+// Recibe un evento de animación
+//====================================================================
+void CIN_Player::HandleAnimEvent( animevent_t *pEvent )
+{
+	if ( pEvent->Event() == AE_FOOTSTEP_LEFT )
+	{
+		return;
+	}
+
+	if ( pEvent->Event() == AE_FOOTSTEP_RIGHT )
+	{
+		return;
+	}
+
+	BaseClass::HandleAnimEvent( pEvent );
+}
+
+//====================================================================
+//====================================================================
 void CIN_Player::SetAnimation( PLAYER_ANIM playerAnim  )
 {
 	if ( playerAnim == PLAYER_RELOAD )
 		DoAnimationEvent( PLAYERANIMEVENT_RELOAD );
 }
 
-//=========================================================
+//====================================================================
 // Ejecuta una animación en el modelo del jugador
-//=========================================================
+//====================================================================
 void CIN_Player::DoAnimationEvent( PlayerAnimEvent_t pEvent, int nData )
 {
 	m_nAnimState->DoAnimationEvent( pEvent, nData );
 	TE_PlayerAnimEvent( this, pEvent, nData );
 }
 
-//=========================================================
+//====================================================================
 // Comienza el modo espectador
-//=========================================================
+//====================================================================
 void CIN_Player::Spectate( CIN_Player *pTarget )
 {
 	// Ya estamos como espectador.
@@ -1342,9 +1812,9 @@ void CIN_Player::Spectate( CIN_Player *pTarget )
 	}
 }
 
-//=========================================================
+//====================================================================
 // Permite ejecutar un comando no registrado
-//=========================================================
+//====================================================================
 bool CIN_Player::ClientCommand( const CCommand &args )
 {
 	//
@@ -1413,12 +1883,60 @@ bool CIN_Player::ClientCommand( const CCommand &args )
 		return true;
 	}
 
+	//
+	// Dejar un objeto del inventario
+	//
+	if ( FStrEq(args[0], "drop_item") ) 
+	{
+		// Debe haber 2 argumentos
+		if ( args.ArgC() == 1 )
+			return false;
+
+		int iSlot = atoi( args[1] );
+
+		// No tengo inventario
+		if ( !GetInventory() )
+			return false;
+
+		GetInventory()->DropBySlot( iSlot );
+		return true;
+	}
+
+	//
+	// Usa un objeto del inventario
+	//
+	if ( FStrEq(args[0], "use_item") ) 
+	{
+		// Debe haber 2 argumentos
+		if ( args.ArgC() == 1 )
+			return false;
+
+		int iSlot = atoi( args[1] );
+
+		// No tengo inventario
+		if ( !GetInventory() )
+			return false;
+
+		GetInventory()->UseItem( iSlot );
+		return true;
+	}
+
+	if ( FStrEq(args[0], "drop_items") ) 
+	{
+		// No tengo inventario
+		if ( !GetInventory() )
+			return false;
+
+		GetInventory()->DropAll();
+		return true;
+	}
+
 	return BaseClass::ClientCommand( args );
 }
 
-//=========================================================
+//====================================================================
 // Procesa un comando "impulse"
-//=========================================================
+//====================================================================
 void CIN_Player::CheatImpulseCommands( int iImpulse )
 {
 	switch ( iImpulse )
@@ -1446,7 +1964,7 @@ void CIN_Player::CheatImpulseCommands( int iImpulse )
 			GiveNamedItem( "weapon_mp5" );
 			GiveNamedItem( "weapon_mrc" );
 			GiveNamedItem( "weapon_ak47" );
-			GiveNamedItem( "weapon_mp5k" );
+			//GiveNamedItem( "weapon_mp5k" );
 		
 			// Algo de salud.
 			if ( !InRules->IsGameMode(GAME_MODE_SURVIVAL_TIME) )
@@ -1464,14 +1982,12 @@ void CIN_Player::CheatImpulseCommands( int iImpulse )
 	}
 }
 
-//=========================================================
+//====================================================================
 // [Evento] El Jugador esta siendo "usado"
-//=========================================================
+//====================================================================
 void CIN_Player::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE useType, float value )
 {
 	BaseClass::Use( pActivator, pCaller, useType, value );
-
-	Msg("[CIN_Player::Use] !!! \n");
 
 	if ( !pActivator || !pActivator->IsPlayer() )
 		return;
@@ -1479,13 +1995,15 @@ void CIN_Player::Use( CBaseEntity *pActivator, CBaseEntity *pCaller, USE_TYPE us
 	CIN_Player *pPlayerActivator = ToInPlayer( pActivator );
 
 	// Alguien nos esta levantando
-	if ( m_bDejected )
-		GetUp( pPlayerActivator );
+	if ( IsIncap() )
+	{
+		HelpIncap( pPlayerActivator );
+	}
 }
 
-//=========================================================
+//====================================================================
 // Procesa los Inputs del Jugador
-//=========================================================
+//====================================================================
 void CIN_Player::PlayerRunCommand( CUserCmd *ucmd, IMoveHelper *moveHelper )
 {
 	// No moverse.
@@ -1496,44 +2014,37 @@ void CIN_Player::PlayerRunCommand( CUserCmd *ucmd, IMoveHelper *moveHelper )
 		ucmd->upmove		= 0;
 	}
 
-	// Botones desactivados.
-	if ( m_afButtonDisabled != 0 )
-		ucmd->buttons &= ~(m_afButtonDisabled);
-
-	ucmd->viewangles.z = m_iEyeAngleZ;
-
 	BaseClass::PlayerRunCommand( ucmd, moveHelper );
 }
 
-//=========================================================
+//====================================================================
 // Procesa los Inputs del Jugador
-//=========================================================
+//====================================================================
 void CIN_Player::ProcessUsercmds( CUserCmd *cmds, int numcmds, int totalcmds, int dropped_packets, bool paused )
 {
-	cmds->viewangles.z = m_iEyeAngleZ;
 	BaseClass::ProcessUsercmds( cmds, numcmds, totalcmds, dropped_packets, paused );
 }
 
-//=========================================================
+//====================================================================
 // Activa la capacidad de presionar los botones
-//=========================================================
-void CIN_Player::EnableButtons( int iButtons )
+//====================================================================
+/*void CIN_Player::EnableButtons( int iButtons )
 {
 	m_afButtonDisabled &= ~iButtons;
 }
 
-//=========================================================
+//====================================================================
 // Desactiva la capacidad de presionar los botones
-//=========================================================
+//====================================================================
 void CIN_Player::DisableButtons( int iButtons )
 {
 	m_afButtonDisabled |= iButtons;
-}
+}*/
 
-//=========================================================
+//====================================================================
 // Selecciona el "info_player_start" en donde crear el
 // jugador.
-//=========================================================
+//====================================================================
 CBaseEntity *CIN_Player::EntSelectSpawnPoint()
 {
 	CBaseEntity *pSpot				= NULL;
@@ -1602,19 +2113,19 @@ CBaseEntity *CIN_Player::EntSelectSpawnPoint()
 	return gEntList.FindEntityByClassname( NULL, pSpawnPointName );
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 int CIN_Player::ObjectCaps()
 {
-	// Estamos abatidos
-	if ( m_bDejected )
+	// Estamos abatidos, pueden usar E continuamente para levantarnos
+	if ( IsIncap() )
 		return ( BaseClass::ObjectCaps() | FCAP_CONTINUOUS_USE );
 
 	return BaseClass::ObjectCaps();
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void CIN_Player::SnapEyeAnglesZ( int iAngle )
 {
 	m_iEyeAngleZ = iAngle;

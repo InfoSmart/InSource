@@ -9,27 +9,29 @@
 #include "ai_basenpc.h"
 #include "ai_pathfinder.h"
 
+#include "in_utils.h"
+
 #include "tier0/memdbgon.h"
 
 PlayersManager g_PlayersManager;
 PlayersManager *PlysManager = &g_PlayersManager;
 
-//=========================================================
+//====================================================================
 // Comandos de consola
-//=========================================================
+//====================================================================
 
 extern double round( double number );
 
-//=========================================================
+//====================================================================
 // Constructor
-//=========================================================
+//====================================================================
 PlayersManager::PlayersManager() : CAutoGameSystemPerFrame( "PlayersManager" )
 {
 }
 
-//=========================================================
+//====================================================================
 // Inicia el sistema
-//=========================================================
+//====================================================================
 bool PlayersManager::Init()
 {
 	m_iTotal		= 0;
@@ -49,35 +51,35 @@ bool PlayersManager::Init()
 	return true;
 }
 
-//=========================================================
+//====================================================================
 // Apaga el sistema
-//=========================================================
+//====================================================================
 void PlayersManager::Shutdown()
 {
 	Init();
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void PlayersManager::LevelInitPreEntity()
 {
 	Init();
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void PlayersManager::LevelInitPostEntity()
 {
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void PlayersManager::FrameUpdatePreEntityThink()
 {
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void PlayersManager::FrameUpdatePostEntityThink()
 {
 	if ( gpGlobals->curtime <= m_iNextScan )
@@ -87,9 +89,9 @@ void PlayersManager::FrameUpdatePostEntityThink()
 	m_iNextScan = gpGlobals->curtime + 1.0f;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el equipo de Jugadores a escanear
-//=========================================================
+//====================================================================
 int PlayersManager::DefaultTeam()
 {
 	#ifdef APOCALYPSE
@@ -99,8 +101,8 @@ int PlayersManager::DefaultTeam()
 	return TEAM_ANY;
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void PlayersManager::ExecCommand( const char *pName )
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
@@ -114,9 +116,9 @@ void PlayersManager::ExecCommand( const char *pName )
 	}
 }
 
-//=========================================================
+//====================================================================
 // Devuelve al jugador con la ID especificada
-//=========================================================
+//====================================================================
 CIN_Player *PlayersManager::Get( int iIndex )
 {
 	// Esta ID no es válida.
@@ -135,17 +137,17 @@ CIN_Player *PlayersManager::Get( int iIndex )
 	return pPlayer;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el jugador que ha creado la partida
-//=========================================================
+//====================================================================
 CIN_Player *PlayersManager::GetLocal()
 {
 	return Get( 1 );
 }
 
-//=========================================================
+//====================================================================
 // Devuelve un jugador al azar.
-//=========================================================
+//====================================================================
 CIN_Player *PlayersManager::GetRandom( int iTeam )
 {
 	int iPlayers[50]	= {};
@@ -159,7 +161,7 @@ CIN_Player *PlayersManager::GetRandom( int iTeam )
 			continue;
 
 		// No esta vivo
-		if ( !pPlayer->IsAlive() || pPlayer->IsObserver() )
+		if ( !pPlayer->IsAlive() )
 			continue;
 
 		// Solo queremos un jugador de un determinado equipo
@@ -190,10 +192,10 @@ CIN_Player *PlayersManager::GetRandom( int iTeam )
 	return pPlayer;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el jugador más cercano a la posición indicada
-//=========================================================
-CIN_Player *PlayersManager::GetNear( const Vector &vPosition, float &fDistance, int iTeam )
+//====================================================================
+CIN_Player *PlayersManager::GetNear( const Vector &vPosition, float &fDistance, int iTeam, CBasePlayer *pExcept )
 {
 	CIN_Player *pNear	= NULL;
 	fDistance			= 0.0f;
@@ -208,8 +210,17 @@ CIN_Player *PlayersManager::GetNear( const Vector &vPosition, float &fDistance, 
 			continue;
 
 		// No esta vivo
-		if ( !pPlayer->IsAlive() || pPlayer->IsObserver() )
+		if ( !pPlayer->IsAlive() )
 			continue;
+
+		if ( pExcept )
+		{
+			if ( pPlayer == pExcept )
+				continue;
+
+			if ( pExcept->IsBot() && pPlayer->IsBot() )
+				continue;
+		}
 
 		// Solo queremos un jugador de un determinado equipo
 		if ( iTeam != TEAM_ANY )
@@ -232,18 +243,18 @@ CIN_Player *PlayersManager::GetNear( const Vector &vPosition, float &fDistance, 
 	return pNear;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el jugador más cercano a la posición indicada
-//=========================================================
+//====================================================================
 CIN_Player *PlayersManager::GetNear( const Vector &vPosition, int iTeam )
 {
 	float fDistance;
 	return GetNear( vPosition, fDistance, iTeam );
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el NPC tiene una ruta válida hacia el jugador
-//=========================================================
+//====================================================================
 bool PlayersManager::HasRoute( CIN_Player *pPlayer, CAI_BaseNPC *pNPC, int iTolerance, Navigation_t pNavType )
 {
 	AI_Waypoint_t *pRoute = pNPC->GetPathfinder()->BuildRoute( pNPC->GetAbsOrigin(), pPlayer->GetAbsOrigin(), pPlayer, iTolerance, pNavType );
@@ -255,10 +266,10 @@ bool PlayersManager::HasRoute( CIN_Player *pPlayer, CAI_BaseNPC *pNPC, int iTole
 	return true;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el NPC tiene una ruta válida hacia todos
 // los jugadores
-//=========================================================
+//====================================================================
 bool PlayersManager::HasRouteToAny( CAI_BaseNPC *pNPC, int iTolerance, Navigation_t pNavType )
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
@@ -277,8 +288,8 @@ bool PlayersManager::HasRouteToAny( CAI_BaseNPC *pNPC, int iTolerance, Navigatio
 	return true;
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void PlayersManager::RespawnAll()
 {
 	// Volvemos a crear a todos los jugadores.
@@ -294,9 +305,9 @@ void PlayersManager::RespawnAll()
 	}
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si hay jugadores vivos
-//=========================================================
+//====================================================================
 bool PlayersManager::AreLive()
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
@@ -315,9 +326,9 @@ bool PlayersManager::AreLive()
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Ejecuta la función "StopMusic" de todos los jugadores.
-//=========================================================
+//====================================================================
 void PlayersManager::StopMusic()
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
@@ -333,10 +344,10 @@ void PlayersManager::StopMusic()
 	}
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el Area de Navegación ha sido visitada por
 // los Jugadores
-//=========================================================
+//====================================================================
 bool PlayersManager::InLastKnowAreas( CNavArea *pArea )
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
@@ -354,10 +365,10 @@ bool PlayersManager::InLastKnowAreas( CNavArea *pArea )
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si la posición esta en la visibilidad
 // de algún jugador
-//=========================================================
+//====================================================================
 bool PlayersManager::IsVisible( const Vector &vPosition )
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
@@ -366,10 +377,6 @@ bool PlayersManager::IsVisible( const Vector &vPosition )
 
 		// Jugador inválido.
 		if ( !pPlayer )
-			continue;
-
-		// Los BOTS no cuentan.
-		if ( pPlayer->IsBot() )
 			continue;
 
 		#ifdef APOCALYPSE
@@ -385,10 +392,10 @@ bool PlayersManager::IsVisible( const Vector &vPosition )
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si la entidad esta en la visibilidad
 // de algún jugador
-//=========================================================
+//====================================================================
 bool PlayersManager::IsVisible( CBaseEntity *pEntity )
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
@@ -397,10 +404,6 @@ bool PlayersManager::IsVisible( CBaseEntity *pEntity )
 
 		// Jugador inválido
 		if ( !pPlayer )
-			continue;
-
-		// Los BOTS no cuentan
-		if ( pPlayer->IsBot() )
 			continue;
 
 		#ifdef APOCALYPSE
@@ -416,10 +419,10 @@ bool PlayersManager::IsVisible( CBaseEntity *pEntity )
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si la posición esta en el cono de mira
 // de algún jugador
-//=========================================================
+//====================================================================
 bool PlayersManager::InViewcone( const Vector &vPosition )
 {
 	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
@@ -428,10 +431,6 @@ bool PlayersManager::InViewcone( const Vector &vPosition )
 
 		// Jugador inválido
 		if ( !pPlayer )
-			continue;
-
-		// Los BOTS no cuentan
-		if ( pPlayer->IsBot() )
 			continue;
 
 		#ifdef APOCALYPSE
@@ -447,37 +446,90 @@ bool PlayersManager::InViewcone( const Vector &vPosition )
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si la entidad esta en el cono de mira
 // de algún jugador
-//=========================================================
+//====================================================================
 bool PlayersManager::InViewcone(CBaseEntity *pEntity)
 {
 	return InViewcone( pEntity->WorldSpaceCenter() );
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si la ubicación se encuentra a la vista o en el
 // cono de visibilidad de algún jugador
-//=========================================================
+//====================================================================
 bool PlayersManager::InVisibleCone(const Vector &vPosition)
 {
-	return ( IsVisible(vPosition) || InViewcone(vPosition) );
+	return ( IsVisible(vPosition) && InViewcone(vPosition) );
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si la entidad se encuentra a la vista o en el
 // cono de visibilidad de algún jugador
-//=========================================================
+//====================================================================
 bool PlayersManager::InVisibleCone(CBaseEntity *pEntity)
 {
-	return ( IsVisible(pEntity) || InViewcone(pEntity) );
+	return ( IsVisible(pEntity) && InViewcone(pEntity) );
 }
 
-//=========================================================
+//====================================================================
+//====================================================================
+void PlayersManager::SendLesson( const char *pLesson, CIN_Player *pPlayer, bool bOnce, CBaseEntity *pSubject )
+{
+	// Solo debemos enviarlo una vez por vida
+	if ( bOnce )
+	{
+		if ( pPlayer->m_nLessonsList.HasElement(pLesson) )
+			return;
+	}
+
+	IGameEvent *pEvent = Utils::CreateLesson( pLesson, pSubject );
+
+	if ( pEvent )
+	{
+		// Solo una vez
+		if ( bOnce )
+		{
+			pPlayer->m_nLessonsList.AddToTail( pLesson );
+		}
+
+		pEvent->SetInt( "userid", pPlayer->GetUserID() );
+		gameeventmanager->FireEvent( pEvent );
+	}
+}
+
+//====================================================================
+//====================================================================
+void PlayersManager::SendAllLesson( const char *pLesson, bool bOnce, CBaseEntity *pSubject )
+{
+	if ( bOnce )
+	{
+		for ( int i = 1; i <= gpGlobals->maxClients; ++i )
+		{
+			CIN_Player *pPlayer = Get(i);
+
+			if ( !pPlayer )
+				continue;
+
+			SendLesson( pLesson, pPlayer, bOnce, pSubject );
+		}
+
+		return;
+	}
+
+	IGameEvent *pEvent = Utils::CreateLesson( pLesson, pSubject );
+
+	if ( pEvent )
+	{
+		gameeventmanager->FireEvent( pEvent );
+	}
+}
+
+//====================================================================
 // Devuelve del 1 al 100 el porcentaje de salud de todos
 // los jugadores
-//=========================================================
+//====================================================================
 int PlayersManager::GetHealth()
 {
 	int iHealth		= 0;
@@ -507,9 +559,9 @@ int PlayersManager::GetHealth()
 	return iHealth;
 }
 
-//=========================================================
+//====================================================================
 // Escanea a los recursos de los jugadores
-//=========================================================
+//====================================================================
 void PlayersManager::Scan( int iTeam )
 {
 	// Reinciamos las variables
@@ -557,7 +609,7 @@ void PlayersManager::Scan( int iTeam )
 		flSanityTotal += pPlayer->GetSanity();
 
 		// Incapacitado
-		if ( pPlayer->IsDejected() )
+		if ( pPlayer->IsIncap() )
 			++m_iDejected;
 
 		// Esta en combate
@@ -613,12 +665,12 @@ void PlayersManager::Scan( int iTeam )
 	}
 }
 
-//=========================================================
+//====================================================================
 // Calcula el estado general de los jugadores según lo que
 // tengan en recursos
 //
 // TODO: Algo mejor
-//=========================================================
+//====================================================================
 void PlayersManager::Decide()
 {
 	int iPoints = 0;

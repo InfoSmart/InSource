@@ -30,7 +30,7 @@ public:
 
 	virtual void Play( float flVolume = -1 );
 	virtual void Stop();
-	virtual void Fadeout( float flRange = 3.0f, bool bDestroy = false );
+	virtual void Fadeout( float flRange = 2.0f, bool bDestroy = false );
 
 	virtual void SetVolume( float flValue = -1 );
 	virtual void SetPitch( float flValue );
@@ -40,7 +40,7 @@ public:
 	virtual void SetTagSound( const char *pName );
 	virtual void SetTagSound( EnvMusic *pMusic );
 
-	virtual void SetFrom( CBaseEntity *pEntity );
+	virtual void SetFrom( CBaseEntity *pEntity, bool bOnlyTo = false );
 	virtual void SetOnlyToTeam( int iTeam );
 	virtual void SetExceptPlayer( bool bValue ) { m_bExceptPlayer = bValue; }
 
@@ -55,6 +55,8 @@ protected:
 	EnvMusic *m_nTagMusic;
 
 	CBaseEntity *m_nFromEntity;
+	bool m_bOnlyTo;
+
 	int m_iTeam;
 	bool m_bExceptPlayer;
 	

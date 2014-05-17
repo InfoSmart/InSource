@@ -1,44 +1,55 @@
-//========= Copyright © 1996-2005, Valve Corporation, All rights reserved. ============//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #ifndef NPC_INFECTED_H
 #define NPC_INFECTED_H
 
 #pragma once
 
-#include "ai_basemelee_npc.h"
+#include "ai_base_infected.h"
 #include "in_shareddefs.h"
+
+#include "doors.h"
 
 //=========================================================
 // >> CInfected
 //=========================================================
-class CInfected : public CAI_BaseMeleeNPC
+class CInfected : public CBaseInfected
 {
 public:
-	DECLARE_CLASS( CInfected, CAI_BaseMeleeNPC );
+	DECLARE_CLASS( CInfected, CBaseInfected );
 	DECLARE_DATADESC();
-
-	virtual	bool AllowedToIgnite() { return true; }
+	DEFINE_CUSTOM_AI;
 
 	// Principales
 	virtual void Spawn();
 	virtual void Precache();
-	virtual void Think();
+	virtual void NPCThink();
 
 	Class_T Classify();
+
+	virtual void UpdateFall();
+	virtual void UpdateFallOn();
+	virtual void UpdateClimb();
 
 	virtual void SetInfectedModel();
 	virtual void SetClothColor();
 
-	virtual void HandleGesture();
+	virtual void UpdateGesture();
 	virtual void HandleAnimEvent( animevent_t *pEvent );
 
 	virtual void CreateGoreGibs( int iBodyPart, const Vector &vecOrigin, const Vector &vecDir );
 
-	// Finjir
+	// Relajarse / Dormir
+	virtual bool IsRelaxing() { return m_bRelaxing; }
+	virtual bool IsSleeping() { return m_bSleeping; }
+
 	virtual void UpdateRelaxStatus();
 
-	virtual void GoToSit();
-	virtual void GoUp();
+	virtual void GoToRelax();
+	virtual void GoRelaxToStand();
+
+	virtual void GoToSleep();
+	virtual void GoWake();
 
 	// Sonidos
 	virtual bool ShouldPlayIdleSound();
@@ -51,7 +62,9 @@ public:
 
 	// Ataque
 	virtual bool CanAttack();
+
 	virtual void OnEnemyChanged( CBaseEntity *pOldEnemy, CBaseEntity *pNewEnemy );
+	virtual void OnTouch( CBaseEntity *pActivator );
 	
 	virtual int	OnTakeDamage( const CTakeDamageInfo &info );
 	virtual void Event_Killed( const CTakeDamageInfo &info );
@@ -68,13 +81,16 @@ public:
 	Activity NPC_TranslateActivity( Activity pActivity );
 
 	// Tareas
+	virtual void GatherConditions();
+
 	virtual void StartTask( const Task_t *pTask );
 	virtual void RunTask( const Task_t *pTask );
 
+	//virtual int SelectFailSchedule( int failedSchedule, int failedTask, AI_TaskFailureCode_t taskFailCode );
 	virtual int SelectSchedule();
+	virtual int SelectIdleSchedule();
+	virtual int SelectCombatSchedule();
 	virtual int TranslateSchedule( int scheduleType );
-
-	DEFINE_CUSTOM_AI;
 
 protected:
 	//bool m_bCanAttack;
@@ -84,10 +100,18 @@ protected:
 	float m_flAttackIn;
 
 	int m_iFaceGesture;
-	int m_iAttackLayer;
 
 	int m_iNextRelaxing;
+	int m_iNextSleep;
+
 	bool m_bRelaxing;
+	bool m_bSleeping;
+	bool m_bCanSprint;
+
+	bool m_bFalling;
+
+	int m_iRelaxingSequence;
+	int m_iSleepSequence;
 };
 
 #endif // NPC_INFECTED_H

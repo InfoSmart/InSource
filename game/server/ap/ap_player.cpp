@@ -3,42 +3,68 @@
 #include "cbase.h"
 #include "ap_player.h"
 
+#include "ap_playeranimstate.h"
 #include "ap_gamerules.h"
 #include "ap_player_infected.h"
 
 #include "in_buttons.h"
 
-//=========================================================
+//====================================================================
 // Comandos
-//=========================================================
+//====================================================================
 
 ConVar player_blood_level( "in_player_blood_level", "5000", FCVAR_SERVER, "" );
 
-#define BLOOD_LEVEL player_blood_level.GetFloat()
-#define NEXT_LIFE_UPDATE gpGlobals->curtime + RandomInt(20, 120)
+#define BLOOD_LEVEL			player_blood_level.GetFloat()
+#define NEXT_LIFE_UPDATE	gpGlobals->curtime + RandomInt(20, 120)
 
-//=========================================================
+//====================================================================
 // Información y Red
-//=========================================================
+//====================================================================
 
 LINK_ENTITY_TO_CLASS( player, CAP_Player );
 PRECACHE_REGISTER( player );
 
+IMPLEMENT_SERVERCLASS_ST( CAP_Player, DT_ApPlayer )
+END_SEND_TABLE()
+
 BEGIN_DATADESC( CAP_Player )
-	DEFINE_FIELD( m_nLowStaminaSound, FIELD_EHANDLE ),
-	DEFINE_FIELD( m_nSanityTerror, FIELD_EHANDLE ),
+	DEFINE_FIELD( m_nIncapMusic, FIELD_EHANDLE ),
 	DEFINE_FIELD( m_nDeathMusic, FIELD_EHANDLE ),
 
 	DEFINE_FIELD( m_nTired, FIELD_EHANDLE ),
 	DEFINE_FIELD( m_nFall, FIELD_EHANDLE ),
 END_DATADESC()
 
-//=========================================================
+//===============================================================================
+// Permite la creación del Jugador como Infectado
+//===============================================================================
+CAP_Player *CAP_Player::CreateSurvivorPlayer( const char *pClassName, edict_t *pEdict, const char *pPlayerName )
+{
+	CBasePlayer::s_PlayerEdict = pEdict;
+
+	CAP_Player *pPlayer = ( CAP_Player * )CreateEntityByName( pClassName );
+	pPlayer->SetPlayerName( pPlayerName );
+
+	return pPlayer;
+}
+
+//===============================================================================
+// Crea el procesador de animaciones
+//===============================================================================
+void CAP_Player::CreateAnimationState()
+{
+	m_nAnimState = CreateApPlayerAnimationState( this );
+}
+
+//====================================================================
 // Creación en el mapa
-//=========================================================
+//====================================================================
 void CAP_Player::Spawn()
 {
 	BaseClass::Spawn();
+
+	SendLesson( "instructor_start_gameplay_normal" );
 
 	// Niveles de recursos
 	m_flBloodLevel		= BLOOD_LEVEL;
@@ -51,9 +77,9 @@ void CAP_Player::Spawn()
 	m_iNextBleedEffect	= gpGlobals->curtime;
 }
 
-//=========================================================
+//====================================================================
 // Guarda objetos necesarios en caché.
-//=========================================================
+//====================================================================
 void CAP_Player::Precache()
 {
 	BaseClass::Precache();
@@ -75,8 +101,8 @@ void CAP_Player::Precache()
 	}
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void CAP_Player::PrecacheMultiplayer()
 {
 	// Modelos para los humanos
@@ -92,9 +118,9 @@ void CAP_Player::PrecacheMultiplayer()
 		PrecacheModel( m_nInfectedPlayerModels[i] );
 }
 
-//=========================================================
+//====================================================================
 // Pensamiento
-//=========================================================
+//====================================================================
 void CAP_Player::PostThink()
 {
 	BaseClass::PostThink();
@@ -105,9 +131,9 @@ void CAP_Player::PostThink()
 	}
 }
 
-//=========================================================
+//====================================================================
 // Valida y establece el modelo del jugador
-//=========================================================
+//====================================================================
 const char* CAP_Player::GetPlayerModelValidated()
 {
 	const char *pPlayerModel = GetConVar( "cl_playermodel" );
@@ -144,9 +170,9 @@ const char* CAP_Player::GetPlayerModelValidated()
 	return pPlayerModel;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el modelo es válido
-//=========================================================
+//====================================================================
 bool CAP_Player::IsValidModel( const char *pModel )
 {
 	// Usemos el modelo que ha seleccionado el jugador
@@ -187,38 +213,48 @@ bool CAP_Player::IsValidModel( const char *pModel )
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Prepara la música del jugador
-//=========================================================
+//====================================================================
 void CAP_Player::PrepareMusic()
 {
-	m_nSanityTerror = new EnvMusic("Player.Music.SanityTerror");
-	m_nSanityTerror->SetFrom( this );
+	m_nDeathMusic = CreateLayerSound( "Player.Music.Death", LAYER_VERYHIGH );
+	m_nDeathMusic->SetOnlyTeam( GetTeamNumber() );
+	m_nDeathMusic->SetListener( this );
+	m_nDeathMusic->SetTagSound( "Player.Music.Death.Tag" );
 
-	m_nDeathMusic = new EnvMusic("Player.Music.Death");
-	m_nDeathMusic->SetFrom( this );
-	m_nDeathMusic->SetTagSound("Player.Music.Death.Tag");
+	m_nPreDeathMusic = CreateLayerSound( "Player.Music.PreDeath", LAYER_VERYHIGH );
+	m_nPreDeathMusic->SetOnlyTeam( GetTeamNumber() );
+	m_nPreDeathMusic->SetListener( this );
+	m_nPreDeathMusic->SetTagSound( "Player.Music.PreDeath.Tag" );
 
-	//  REMOVE!
-	m_nTired = new EnvMusic("Player.Breath.Tired");
-	m_nTired->SetFrom( this );
+	m_nIncapMusic = CreateLayerSound( "Player.Music.Incap", LAYER_NO, true );
+	m_nIncapMusic->SetListener( this );
 
-	m_nFall = new EnvMusic("Player.Fall");
-	m_nFall->SetFrom( this );
+	m_nClimbingIncapMusic = CreateLayerSound( "Player.Music.ClimbIncap.Firm", LAYER_VERYHIGH, true );
+	m_nClimbingIncapMusic->SetListener( this );
+
+	// FacePoser!
+	m_nTired = CreateLayerSound( "Player.Breath.Tired", LAYER_NO );
+	m_nTired->SetListener( this );
+
+	m_nFall = CreateLayerSound( "Abigail.Fall", LAYER_NO );
+	m_nFall->SetListener( this );
 }
 
-//=========================================================
+//====================================================================
 // Para la música del jugador
-//=========================================================
+//====================================================================
 void CAP_Player::StopMusic()
 {
-	m_nSanityTerror->Fadeout();
-	m_nDeathMusic->Fadeout();
+	m_nDeathMusic->Stop();
+	m_nPreDeathMusic->Stop();
+	m_nIncapMusic->Stop();
 }
 
-//=========================================================
+//====================================================================
 // Sonido de dolor
-//=========================================================
+//====================================================================
 void CAP_Player::PainSound( const CTakeDamageInfo &info )
 {
 	// Aún no toca
@@ -229,7 +265,7 @@ void CAP_Player::PainSound( const CTakeDamageInfo &info )
 	m_flNextPainSound = gpGlobals->curtime + RandomFloat( 0.5f, 1.5f );
 
 	// Estoy abatido
-	if ( m_bDejected )
+	if ( IsIncap() )
 	{
 		EmitPlayerSound("Hurt.Dejected");
 		return;
@@ -261,9 +297,9 @@ void CAP_Player::PainSound( const CTakeDamageInfo &info )
 	m_flNextDyingSound = gpGlobals->curtime + RandomFloat( 5.0f, 10.0f );
 }
 
-//=========================================================
+//====================================================================
 // Sonido de poca salud ¡me muero!
-//=========================================================
+//====================================================================
 void CAP_Player::DyingSound()
 {
 	// Aún no toca
@@ -274,7 +310,7 @@ void CAP_Player::DyingSound()
 	m_flNextDyingSound = gpGlobals->curtime + RandomFloat( 25.0f, 40.0f );
 
 	// Estamos incapacitados, no sería lógico.
-	if ( IsDejected() )
+	if ( IsIncap() )
 		return;
 
 	int iHealth = GetHealth();
@@ -293,9 +329,9 @@ void CAP_Player::DyingSound()
 		EmitPlayerSound("Dying.Minor");
 }
 
-//=========================================================
+//====================================================================
 // Actualiza las voces/sonidos
-//=========================================================
+//====================================================================
 void CAP_Player::UpdateSounds()
 {
 	bool bIsTired = false;
@@ -317,30 +353,31 @@ void CAP_Player::UpdateSounds()
 	// Estamos cansados
 	if ( bIsTired )
 		m_nTired->Play();
-	else
-		m_nTired->Update();
 
 	// Sufro!
 	DyingSound();
 }
 
-//=========================================================
+//====================================================================
 // [Evento] El jugador ha recibido daño pero sigue vivo
-//=========================================================
+//====================================================================
 int CAP_Player::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 {
 	// Nos ha causado una herida
-	if ( RandomInt(0, 5) == 5 )
+	if ( InRules->IsGameMode(GAME_MODE_SURVIVAL) )
 	{
-		m_bBleed = true;
+		if ( RandomInt(0, 5) == 5 )
+		{
+			m_bBleed = true;
+		}
 	}
 
 	return BaseClass::OnTakeDamage_Alive( info );
 }
 
-//=========================================================
+//====================================================================
 // [Evento] El jugador ha muerto.
-//=========================================================
+//====================================================================
 void CAP_Player::Event_Killed( const CTakeDamageInfo &info )
 {
 	BaseClass::Event_Killed( info );
@@ -352,14 +389,14 @@ void CAP_Player::Event_Killed( const CTakeDamageInfo &info )
 	}
 }
 
-//=========================================================
+//====================================================================
 // Pensamiento cuando el Jugador ha muerto y listo para
 // respawnear
-//=========================================================
+//====================================================================
 void CAP_Player::PlayerDeathPostThink()
 {
 	// Si no es un Humano o no estamos en una partida Multijugador, usar el código original.
-	if ( GetTeamNumber() != TEAM_HUMANS || !InRules->IsMultiplayer() )
+	//if ( GetTeamNumber() != TEAM_HUMANS || !InRules->IsMultiplayer() )
 	{
 		BaseClass::PlayerDeathPostThink();
 		return;
@@ -397,11 +434,15 @@ void CAP_Player::PlayerDeathPostThink()
 	}
 }
 
-//=========================================================
+//====================================================================
 // Actualiza los niveles de Sangre, Comida y Sed
-//=========================================================
+//====================================================================
 void CAP_Player::UpdateLifeLevels()
 {
+	// Solo en Survival
+	if ( !InRules->IsGameMode(GAME_MODE_SURVIVAL) )
+		return;
+
 	// Hora de disminuir energía
 	if ( gpGlobals->curtime >= m_iNextLifeUpdate )
 	{
@@ -465,11 +506,15 @@ void CAP_Player::UpdateLifeLevels()
 	//Msg("[CAP_Player::UpdateLifeLevels] Sangre: %f - Hambre: %i - Sed: %i \n", m_flBloodLevel, m_iHungryLevel, m_iThirstLevel);
 }
 
-//=========================================================
+//====================================================================
 // Efectos al sangrar
-//=========================================================
+//====================================================================
 void CAP_Player::BleedEffects()
 {
+	// Solo en Survival
+	if ( !InRules->IsGameMode(GAME_MODE_SURVIVAL) )
+		return;
+
 	UTIL_BloodSpray( GetAbsOrigin(), vec3_origin, BloodColor(), 5, FX_BLOODSPRAY_GORE );
 	UTIL_BloodDrips( GetAbsOrigin(), vec3_origin, BloodColor(), 5 );
 
@@ -485,11 +530,13 @@ void CAP_Player::BleedEffects()
 	m_iNextBleedEffect = gpGlobals->curtime + RandomInt(1, 3);
 }
 
-//=========================================================
+//====================================================================
 // Actualiza los efectos de una GRAN caida
-//=========================================================
+//====================================================================
 void CAP_Player::UpdateFallEffects()
 {
+	BaseClass::UpdateFallEffects();
+
 	// No podemos tener daño por caida
 	if ( IsGod() || GetMoveType() == MOVETYPE_NOCLIP )
 		return;
@@ -504,9 +551,108 @@ void CAP_Player::UpdateFallEffects()
 	m_nFall->Play();
 }
 
-//=========================================================
+//====================================================================
+// Pensamiento: Al estar incapacitado
+//====================================================================
+void CAP_Player::UpdateIncap()
+{
+	BaseClass::UpdateIncap();
+
+	// No estamos incapacitados
+	if ( !IsIncap() )
+	{
+		m_nIncapMusic->Fadeout();
+		m_nClimbingIncapMusic->Fadeout();
+		m_nPreDeathMusic->Fadeout();
+
+		return;
+	}
+
+	//
+	// Incapacitación en el suelo
+	//
+	if ( !IsClimbingIncap() )
+	{
+
+		// ¡Estamos muriendo!
+		if ( GetHealth() <= 15 )
+		{
+			if ( !m_nPreDeathMusic->IsPlaying() )
+			{
+				color32 black = { 0, 0, 0, 255 };
+				UTIL_ScreenFade( this, black, 30.0f, 0.5f, FFADE_OUT | FFADE_PURGE );
+			}
+
+			m_nIncapMusic->Fadeout();
+			m_nPreDeathMusic->Play();
+		}
+		else
+		{
+			m_nIncapMusic->Play();
+		}
+
+		// ¡Nos quedamos sordos! 
+		if ( GetHealth() < 30 )
+		{
+			int effect = 14;
+
+			if ( GetHealth() < 15 )
+				effect = 15;
+
+			CSingleUserRecipientFilter user( this );
+			enginesound->SetPlayerDSP( user, effect, false );
+		}
+
+		return;
+	}
+
+	//
+	// Incapacitación por quedar colgando
+	//
+
+	float climbingHold	= GetClimbingHold();
+
+	if ( IsWaitingGroundDeath() )
+	{
+		m_nClimbingIncapMusic->SetSoundName( "Player.Music.ClimbIncap.Fall" );
+	}
+	else
+	{
+		if ( climbingHold < 100 )
+		{
+			m_nClimbingIncapMusic->SetSoundName( "Player.Music.ClimbIncap.Dangle" );
+		}
+		else if ( climbingHold < 250 )
+		{
+			m_nClimbingIncapMusic->SetSoundName("Player.Music.ClimbIncap.Weak");
+		}
+		else
+		{
+			m_nClimbingIncapMusic->SetSoundName( "Player.Music.ClimbIncap.Firm" );
+		}
+	}
+
+	m_nClimbingIncapMusic->Play();
+}
+
+//====================================================================
+//====================================================================
+void CAP_Player::OnStartIncap()
+{
+	SendLesson( "instructor_incap" );
+}
+
+//====================================================================
+//====================================================================
+void CAP_Player::OnStopIncap()
+{
+	CSingleUserRecipientFilter user( this );
+	enginesound->SetPlayerDSP( user, 0, false );
+}
+
+//====================================================================
 // Permite ejecutar un comando no registrado
-//=========================================================
+//====================================================================
 bool CAP_Player::ClientCommand( const CCommand &args )
 {
 	if ( FStrEq(args[0], "join_infected") )

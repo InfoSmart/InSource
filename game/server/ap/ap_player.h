@@ -11,37 +11,43 @@
 //==============================================
 static const char *m_nPlayersTypes[] =
 {
-	"Player",
-	"Male",
-	"Female",
-	"Adan",
-	"Alyx",
-	"Admin",
-	"Burned",
-	"Cristian",
-	"Kleiner",
-	"Magnusson",
-	"Monk",
-	"Mossman",
-	"Odessa",
-	"Police",
-	"Soldier",
+	"Abigail",
+	"Frank",
+};
+
+enum PlayerSound
+{
+	PL_AREA_CLEAR	= 7,
+	PL_BACKUP		= 8,
+	PL_HURRAH		= 10,
+	PL_INCOMING		= 11,
+
+	PL_LAST_SOUND,
 };
 
 static const char *m_nPlayersSounds[] =
 {
-	"SP.Dying.Critical2",
-	"SP.Dying.Major",
+	// Singleplayer
+	"SP.Dying.Major",	
 	"SP.Dying.Critical",
+	"SP.Dying.Critical2",
+	"SP.Help",
 
-	"MP.Dying.Critical2",
+	// Multiplayer
 	"MP.Dying.Major",
 	"MP.Dying.Critical"
-	"MP.Help"
+	"MP.Dying.Critical2",
+	"MP.Help",
 
+	"AreaClear",
+	"Backup",
+	"FriendlyFire",
+	"Hurrah",
+	"Incoming",
+
+	// General
 	"Dying.Minor",
 	"Attacked.Horde",
-	"FriendlyFire",
 	"Hurt.Minor",
 	"Hurt.Major",
 	"Hurt.Critical",
@@ -59,18 +65,21 @@ static const char *m_nPlayerMusic[] =
 {
 	"Death",
 	"Death.Tag",
-	"Pain.Terror",
 	"Burning",
 	"Burning.Tag",
-	"Dejected",
-	"SanityTerror"
+	"Incap",
+	"PreDeath",
+	"PreDeath.Tag",
+
+	"ClimbIncap.Firm",
+	"ClimbIncap.Weak",
+	"ClimbIncap.Dangle",
+	"ClimbIncap.Fall",
 };
 
 static const char *m_nHumansPlayerModels[] =
 {
 	"models/survivors/survivor_ana.mdl",
-	"models/survivors/survivor_kat.mdl",
-	"models/survivors/survivor_producer.mdl",
 	"models/survivors/survivor_frank.mdl",
 };
 
@@ -95,7 +104,21 @@ class CAP_Player : public CIN_Player
 {
 public:
 	DECLARE_CLASS( CAP_Player, CIN_Player );
+	DECLARE_SERVERCLASS();
 	DECLARE_DATADESC();
+
+	static CAP_Player *CreateSurvivorPlayer( const char *pClassName, edict_t *pEdict, const char *pPlayerName );
+	virtual void CreateAnimationState();
+
+	virtual bool IsInfected() 
+	{
+		return ( MyDefaultTeam() == TEAM_INFECTED );
+	}
+
+	virtual bool IsSurvivor() 
+	{
+		return ( MyDefaultTeam() == TEAM_HUMANS );
+	}
 
 	// Principales
 	virtual void Spawn();
@@ -133,6 +156,12 @@ public:
 
 	virtual void UpdateFallEffects();
 
+	// Incapacitación
+	virtual void UpdateIncap();
+
+	virtual void OnStartIncap();
+	virtual void OnStopIncap();
+
 	// Comandos y cheats
 	virtual bool ClientCommand( const CCommand &args );
 
@@ -148,13 +177,14 @@ protected:
 	int m_iNextBleedEffect;
 
 	// Sonidos
-	EnvMusic *m_nLowStaminaSound;
-	EnvMusic *m_nSanityTerror;
-	EnvMusic *m_nDeathMusic;
+	CLayerSound *m_nIncapMusic;
+	CLayerSound *m_nDeathMusic;
+	CLayerSound *m_nPreDeathMusic;
+	CLayerSound *m_nClimbingIncapMusic;
 
 	// Sonidos que deben pasarse al FacePoser
-	EnvMusic *m_nTired;
-	EnvMusic *m_nFall;
+	CLayerSound *m_nTired;
+	CLayerSound *m_nFall;
 };
 
 #endif

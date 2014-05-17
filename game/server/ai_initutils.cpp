@@ -128,7 +128,7 @@ bool CAI_TestHull::IsJumpLegal(const Vector &startPos, const Vector &apex, const
 {
 	const float MAX_JUMP_RISE		= 1024.0f;
 	const float MAX_JUMP_DISTANCE	= 1024.0f;
-	const float MAX_JUMP_DROP		= 1024.0f;
+	const float MAX_JUMP_DROP		= 9024.0f;
 
 	return BaseClass::IsJumpLegal( startPos, apex, endPos, MAX_JUMP_RISE, MAX_JUMP_DISTANCE, MAX_JUMP_DROP );
 }

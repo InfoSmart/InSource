@@ -1,4 +1,4 @@
-//==== InfoSmart. Todos los derechos reservados .===========//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #ifndef DIRECTOR_H
 #define DIRECTOR_H
@@ -15,45 +15,108 @@
 //=========================================================
 
 extern ConVar director_debug;
-extern ConVar director_max_alive;
+extern ConVar director_max_common_alive;
 
 extern ConVar director_min_distance;
 extern ConVar director_max_distance;
+extern ConVar director_danger_distance;
 
 extern ConVar director_max_boss_alive;
-extern ConVar director_danger_distance;
+extern ConVar director_no_boss;
 
 extern ConVar director_spawn_outview;
 extern ConVar director_allow_sleep;
 extern ConVar director_mode;
 
 extern ConVar director_spawn_ambient_interval;
+extern ConVar director_check_unreachable;
 
-//=========================================================
+extern ConVar director_gameover;
+extern ConVar director_gameover_wait;
+
+//====================================================================
+// Macros
+//====================================================================
+
+#define PRINT_DEBUG		director_debug.GetBool()
+
+#define MAX_ALIVE		director_max_common_alive.GetInt()
+#define GAMEOVER_WAIT	director_gameover_wait.GetInt()
+
+#define MIN_DISTANCE	director_min_distance.GetInt()
+#define MAX_DISTANCE	director_max_distance.GetInt()
+#define DANGER_DISTANCE director_danger_distance.GetInt()
+
+#define MAX_BOSS_ALIVE	director_max_boss_alive.GetInt()
+#define NO_BOSS			director_no_boss.GetBool()
+
+#define SPAWN_OUTVIEW	director_spawn_outview.GetBool()
+#define ALLOW_SLEEP		director_allow_sleep.GetBool()
+
+#define SPAWN_AMBIENT_INTERVAL	director_spawn_ambient_interval.GetInt()
+#define CHECK_UNREACHABLE		director_check_unreachable.GetBool()
+#define ALLOW_GAMEOVER			director_gameover.GetBool()
+
+//====================================================================
+// >> CDir_Gamemode
+//
+// Interfaz para la creación de modos de juego para el
+// Director
+//====================================================================
+abstract_class CDR_Gamemode
+{
+public:
+	virtual void Work() = 0;
+
+	virtual void OnSetStatus( DirectorStatus iStatus ) { }
+	virtual void OnSetPhase( DirectorPhase iPhase, int iValue = 0 ) { }
+
+	virtual bool CanSpawnChilds() { return true; }
+	virtual bool CanSpawnBoss() { return true; }
+
+	virtual void OnSpawnChild( CBaseEntity *pEntity ) { }
+	virtual void OnSpawnBoss( CBaseEntity *pEntity ) { }
+	virtual void OnSpawnSpecial( CBaseEntity *pEntity ) { }
+	virtual void OnSpawnAmbient( CBaseEntity *pEntity ) { }
+
+	virtual void OnPlayerHurt( CBasePlayer *pPlayer ) { }
+	virtual void OnPlayerKilled( CBasePlayer *pPlayer ) { }
+};
+
+//====================================================================
 // >> CDirector
-//=========================================================
+//====================================================================
 class CDirector : public CAutoGameSystemPerFrame
 {
 public:
 	DECLARE_CLASS( CDirector, CAutoGameSystemPerFrame );
 
-	//
-	virtual bool Is( int iStatus ) 
+	// Devuelve si el Director se encuentra en un estado
+	virtual bool IsStatus( int iStatus ) 
 	{ 
-		return m_iStatus == iStatus; 
+		return m_iStatus == (DirectorStatus)iStatus; 
 	}
 
-	virtual bool IsAngry( DirectorAngry iAngry )
+	// Devuelve si el Director se encuentra en una fase
+	virtual bool IsPhase( int iPhase ) 
+	{ 
+		return m_iPhase == (DirectorPhase)iPhase; 
+	}
+
+	// Devuelve si el Director esta en en el nivel de enojo
+	virtual bool IsAngry( int iAngry )
 	{
-		return m_iAngry == iAngry;
+		return m_iAngry == (DirectorAngry)iAngry;
 	}
 
-	virtual int TeamGood()
+	// Devuelve el equipo bueno
+	virtual int GetTeamGood()
 	{
 		return TEAM_HUMANS;
 	}
 
-	virtual int TeamEvil()
+	// Devuelve el equipo malo
+	virtual int GetTeamEvil()
 	{
 		return TEAM_INFECTED;
 	}
@@ -61,16 +124,18 @@ public:
 	CDirector();
 
 	// Devolución
-	virtual int InDangerZone() { return m_iChildsInDangerZone; }
-	virtual int ChildsVisibles() { return m_iChildsVisibles; }
+	virtual int InDangerZone() { return m_iCommonInDangerZone; }
+	virtual int ChildsVisibles() { return m_iCommonVisibles; }
 	virtual int GetLastAttackTime() { return m_iLastAttackTime; }
 	
 	// Principales
 	virtual bool Init();
+	virtual void SetupGamemodes();
 
 	virtual void NewMap();
 	virtual void NewCampaign();
 	
+	virtual void PrepareVM();
 	virtual void FindInfoDirector();
 
 	virtual void Stop();
@@ -86,31 +151,27 @@ public:
 	virtual void FrameUpdatePostEntityThink();
 
 	virtual void Work();
-	virtual void ModWork();
-
-	// Modos de juego
-	virtual void NormalUpdate();
-	virtual void SurvivalUpdate();
-	virtual void SurvivalTimeUpdate();
 
 	// Calculos/Verificación
-	virtual void CheckGameover();
+	virtual void RestartMap();
+	virtual bool IsGameover();
 	virtual void UpdateAngry();
+
 	virtual bool IsMode( int iStatus );
 
 	// Depuración
-	virtual const char *GetStatusName( DirectorStatus iStatus = INVALID );
-	virtual const char *GetAngryName( DirectorAngry iStatus = ANGRY_INVALID );
+	virtual const char *GetStatusName( int iStatus = ST_INVALID );
+	virtual const char *GetPhaseName( int iPhase = PH_INVALID );
+	virtual const char *GetAngryName( int iStatus = ANGRY_INVALID );
 	virtual const char *GetStatsName( int iStatus = 0 );
 
 	virtual void PrintDebugInfo();
 
 	// Utilidades
+	virtual CDR_Gamemode *GameMode();
+
 	virtual float MinDistance();
 	virtual float MaxDistance();
-
-	virtual void RestartPanic();
-	virtual void RestartBoss();
 
 	virtual bool IsTooFar( CBaseEntity *pEntity );
 	virtual bool IsTooClose( CBaseEntity *pEntity );
@@ -123,38 +184,32 @@ public:
 	virtual void KillChild( CBaseEntity *pEntity );
 
 	// Eventos
-	virtual void OnSpawnChild( CAI_BaseNPC *pNPC );
-	virtual void OnSpawnBoss( CAI_BaseNPC *pNPC );
-	virtual void OnSpawnSpecial( CAI_BaseNPC *pNPC );
-	virtual void OnSpawnAmbient( CAI_BaseNPC *pNPC );
+	virtual void OnSpawnChild( CBaseEntity *pEntity );
+	virtual void OnSpawnBoss( CBaseEntity *pEntity );
+	virtual void OnSpawnSpecial( CBaseEntity *pEntity );
+	virtual void OnSpawnAmbient( CBaseEntity *pEntity );
 
 	virtual void OnPlayerHurt( CBasePlayer *pPlayer );
 	virtual void OnPlayerKilled( CBasePlayer *pPlayer );
 
 	// Estados
-	virtual void Set( DirectorStatus iStatus );
+	virtual bool CanSetStatus( DirectorStatus iNewStatus );
+	virtual bool CanSetPhase( DirectorPhase iNewPhase );
 
-	virtual bool CanSleep();
-	virtual bool CanRelax();
-	virtual bool CanPanic();
-	virtual bool CanBoss();
-	virtual bool CanClimax();
+	virtual void SetStatus( DirectorStatus iStatus );
+	virtual void SetPhase( DirectorPhase iPhase, int iValue = 0 );
 
-	virtual bool IsInfinitePanic();
-
-	virtual void Sleep();
-	virtual void Relaxed();
-	virtual void Panic( CBasePlayer *pCaller = NULL, int iSeconds = 0, bool bInfinite = false );
-	virtual void Boss();
-	virtual void Climax( bool bMini = false );
+	virtual void StartCombat( CBaseEntity *pActivator = NULL, int iWaves = 2, bool bInfinite = false );
 
 	// Hijos
-	virtual const char *ForceChildClass();
 	virtual int MaxChilds();
-
 	virtual int GetChildType( CBaseEntity *pEntity );
 
-	virtual void ManageChilds();
+	virtual void FreeChildSlot( CBaseEntity *pEntity );
+	virtual void FreeChildSlot( int iSlot, bool bRemove = false );
+	virtual int AddChildSlot( CBaseEntity *pEntity );
+
+	virtual void CheckChilds();
 	virtual void CheckChild( CBaseEntity *pEntity );
 
 	virtual bool CheckDistance( CBaseEntity *pEntity );
@@ -162,7 +217,6 @@ public:
 	virtual bool CheckNewEnemy( CBaseEntity *pEntity );
 
 	virtual bool CanSpawnChilds();
-
 	virtual void HandleAll();
 	virtual void HandleChilds();
 
@@ -171,6 +225,7 @@ public:
 	virtual void HandleAmbient();
 
 	// Jefes
+	virtual void RestartCountdownBoss();
 	virtual bool CanSpawnBoss();
 	virtual void HandleBoss();
 	virtual void TryBoss();
@@ -181,12 +236,17 @@ public:
 
 public:
 	bool m_bDisabled;
+	CDR_Gamemode *m_pGameModes[ LAST_GAME_MODE ];
 
-protected:
 	// Estado
 	DirectorStatus m_iStatus;
-	DirectorAngry m_iAngry;
 	float m_flStatusTime;
+
+	DirectorPhase m_iPhase;
+	int m_iPhaseValue;
+	float m_flPhaseTime;
+
+	DirectorAngry m_iAngry;
 	bool m_bSpawning;
 	bool m_bBlockAllStatus;
 	int m_iNextWork;
@@ -199,34 +259,26 @@ protected:
 
 	CInfoDirector *m_pInfoDirector;
 
-	// Modos
-	bool m_bSurvivalTimeStarted;
-	int m_iSurvivalTime;
-
 	// Cronometros
 	CountdownTimer m_hLeft4Boss;
-	CountdownTimer m_hLeft4Panic;
-	CountdownTimer m_hLeft4FinishPanic;
-	CountdownTimer m_hDisabledTime;
-	CountdownTimer m_hEnd;
-	CountdownTimer m_nPostPanicLimit;
+	CountdownTimer m_hEndGame;
 
-	
+	// Combate
+	int m_iCombatChilds;
+	int m_iCombatsCount;
+	int m_iCombatWaves;
 
-	// Pánico
-	int m_iPanicChilds;
-	int m_iPanicCount;
-	bool m_bPanicSuspended;
-
-	IntervalTimer m_nLastPanicDuration;
-	int m_iLastPanicDeaths;
+	IntervalTimer m_nLastCombatDuration;
+	int m_iLastCombatSeconds;
+	int m_iLastCombatDeaths;
 
 	// Hijos
-	int m_iSpawnQueue;
-	int m_iChildsSpawned;
-	int m_iChildsAlive;
-	int m_iChildsInDangerZone;
-	int m_iChildsVisibles;
+	int m_iCommonSpawned;
+	int m_iCommonAlive;
+	int m_iCommonInDangerZone;
+	int m_iCommonVisibles;
+
+	int m_iCommonLimit;
 
 	// Ambiente
 	int m_iAmbientSpawned;
@@ -250,8 +302,12 @@ protected:
 	friend class CAP_DirectorMusic;
 };
 
+#ifdef APOCALYPSE
+	#include "ap_director.h"
+	#include "ap_director_music.h"
+#endif
 
-#ifndef DIRECTOR_CUSTOM
+#ifndef CUSTOM_DIRECTOR
 	extern CDirector *Director;
 #endif
 

@@ -1,23 +1,19 @@
-//==== InfoSmart. Todos los derechos reservados .===========//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #include "cbase.h"
 
 #include "director.h"
 #include "director_music.h"
 
-#ifdef APOCALYPSE
-	#include "ap_director.h"
-#endif
-
 #include "soundent.h"
 #include "engine/IEngineSound.h"
 
 #include "tier0/memdbgon.h"
 
+// Nuestro ayudante.
 #ifndef CUSTOM_DIRECTOR_MUSIC
-	// Nuestro ayudante.
-	CDirectorMusic g_DirMusic;
-	CDirectorMusic *DirectorMusic = &g_DirMusic;
+	CDirectorMusic g_DirectorMusic;
+	CDirectorMusic *DirectorMusic = &g_DirectorMusic;
 #endif
 
 //=========================================================
@@ -49,23 +45,22 @@ void CDirectorMusic::Precache()
 void CDirectorMusic::Init()
 {
 	Precache();
-
-	m_nBossMusic		= new EnvMusic( MUSIC_BOSS );
-	m_nClimaxMusic		= new EnvMusic( MUSIC_CLIMAX );
-	m_nGameoverMusic	= new EnvMusic( MUSIC_GAMEOVER );
 }
 
 //=========================================================
 //=========================================================
 void CDirectorMusic::OnNewMap()
 {
+	m_nBossMusic		= CreateLayerSound( MUSIC_BOSS, LAYER_HIGH, true );
+	m_nClimaxMusic		= CreateLayerSound( MUSIC_CLIMAX, LAYER_HIGH, true );
+	m_nGameoverMusic	= CreateLayerSound( MUSIC_GAMEOVER, LAYER_TOP );
 }
 
 //=========================================================
 //=========================================================
 void CDirectorMusic::Think()
 {
-	m_nGameoverMusic->Update();
+	//m_nGameoverMusic->Update();
 }
 
 //=========================================================
@@ -76,8 +71,9 @@ void CDirectorMusic::Stop()
 	if ( !m_nBossMusic )
 		return;
 
-	m_nBossMusic->Fadeout();
-	m_nClimaxMusic->Fadeout();
+	m_nGameoverMusic->Stop();
+	m_nBossMusic->Stop();
+	m_nClimaxMusic->Stop();
 }
 
 //=========================================================
@@ -87,9 +83,9 @@ void CDirectorMusic::Shutdown()
 {
 	Stop();
 
-	delete m_nGameoverMusic;
-	delete m_nBossMusic;
-	delete m_nClimaxMusic;
+	UTIL_Remove( m_nGameoverMusic );
+	UTIL_Remove( m_nBossMusic );
+	UTIL_Remove( m_nClimaxMusic );
 }
 
 //=========================================================
@@ -100,15 +96,15 @@ void CDirectorMusic::Update()
 	//
 	// PARTIDA TERMINADA
 	//
-	if ( Director->Is(GAMEOVER) )
+	if ( Director->IsStatus(ST_GAMEOVER) )
 		m_nGameoverMusic->Play();
 	else
-		m_nGameoverMusic->Fadeout( 2.0f );
+		m_nGameoverMusic->Fadeout();
 
 	//
 	// CLIMAX
 	//
-	if ( Director->Is(CLIMAX) )
+	if ( Director->IsStatus(ST_FINALE) )
 		m_nClimaxMusic->Play();
 	else
 		m_nClimaxMusic->Fadeout();
@@ -116,7 +112,7 @@ void CDirectorMusic::Update()
 	//
 	// JEFE
 	//
-	if ( Director->Is(BOSS) )
+	if ( Director->IsStatus(ST_BOSS) )
 		m_nBossMusic->Play();
 	else
 		m_nBossMusic->Fadeout();

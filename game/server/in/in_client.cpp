@@ -1,7 +1,9 @@
 //==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #include "cbase.h"
+
 #include "in_player.h"
+#include "in_bot.h"
 
 #include "in_gamerules.h"
 
@@ -19,18 +21,35 @@
 #include "tier0/memdbgon.h"
 
 //=========================================================
+// Crea la instancia del Jugador y lo pone dentro del servidor
 //=========================================================
 void ClientPutInServer( edict_t *pEdict, const char *pPlayerName )
 {
-	CIN_Player *pPlayer = CIN_Player::CreatePlayer( "player", pEdict );
-	pPlayer->SetPlayerName( pPlayerName );
+#ifdef APOCALYPSE
+	CAP_Player::CreateSurvivorPlayer( "player", pEdict, pPlayerName );
+#else
+	CIN_Player::CreatePlayer( "player", pEdict, pPlayerName );
+#endif
 }
 
 //=========================================================
+// Crea la instancia del Jugador y pone al Bot dentro
+// del servidor
+//=========================================================
+CBasePlayer *BotPutInServer( edict_t *pEdict, const char *pPlayerName )
+{
+	return CIN_Bot::CreatePlayer( "in_bot", pEdict, pPlayerName );
+}
+
+//=========================================================
+// Un cliente intenta acceder al seridor
 //=========================================================
 void ClientActive( edict_t *pEdict, bool bLoadGame )
 {
-	CIN_Player *pPlayer = ToInPlayer( CBaseEntity::Instance( pEdict ) );
+	CIN_Player *pPlayer = ToInPlayer( CBaseEntity::Instance(pEdict) );
+
+	if ( !pPlayer )
+		return;
 	
 	pPlayer->InitialSpawn();
 
@@ -46,9 +65,6 @@ void ClientActive( edict_t *pEdict, bool bLoadGame )
 		if ( *pApersand == '%' )
 			*pApersand = ' ';
 	}
-
-	// Se ha conectado...
-	//UTIL_ClientPrintAll( HUD_PRINTNOTIFY, "#Game_connected", sName[0] != 0 ? sName : "<unconnected>" );
 }
 
 //=========================================================
@@ -58,7 +74,7 @@ void ClientFullyConnect( edict_t *pEntity )
 }
 
 //=========================================================
-// Devuelve el nombre del juego.
+// Devuelve el nombre del juego
 //=========================================================
 const char *GetGameDescription()
 {
@@ -77,7 +93,7 @@ PRECACHE_REGISTER_END()
 
 //=========================================================
 // Objetos del cliente que deben ser guardados
-// en caché.
+// en caché
 //=========================================================
 void ClientGamePrecache()
 {
@@ -106,6 +122,8 @@ void respawn( CBaseEntity *pEdict, bool fCopyCorpse )
 	}
 }
 
+extern void Bot_RunAll();
+
 //=========================================================
 //=========================================================
 void GameStartFrame()
@@ -114,6 +132,8 @@ void GameStartFrame()
 
 	if ( g_pGameRules )
 		g_pGameRules->Think();
+
+	Bot_RunAll();
 
 	if ( g_fGameOver )
 		return;

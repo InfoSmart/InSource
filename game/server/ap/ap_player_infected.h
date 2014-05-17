@@ -4,11 +4,12 @@
 #define AP_PLAYER_INFECTED
 
 #include "ap_player.h"
+#include "behavior_melee_character.h"
 
 //==============================================
 // >> CAP_PlayerInfected
 //==============================================
-class CAP_PlayerInfected : public CAP_Player
+class CAP_PlayerInfected : public CAP_Player, public CB_MeleeCharacter
 {
 public:
 	DECLARE_CLASS( CAP_PlayerInfected, CAP_Player );
@@ -78,10 +79,8 @@ public:
 	virtual void UpdateTiredEffects() { }
 
 	// Ataque
-	virtual CBaseEntity *MeleeAttack();
-
-	virtual CBaseEntity *AttackEntity( CBaseEntity *pEntity );
-	virtual CBaseEntity *AttackCharacter( CBaseCombatCharacter *pCharacter );
+	virtual int GetMeleeDamage();
+	virtual int GetMeleeDistance();
 
 	// Movimiento
 	virtual void UpdateSpeed();

@@ -244,18 +244,18 @@ if exist "$(TargetDir)"$(ProjectName).pdb copy "$(TargetDir)"$(ProjectName).pdb 
     <ClCompile Include="..\shared\achievementmgr.cpp" />
     <ClCompile Include="..\shared\activitylist.cpp" />
     <ClCompile Include="..\shared\ap\ap_gamerules.cpp" />
+    <ClCompile Include="..\shared\ap\ap_playeranimstate.cpp" />
     <ClCompile Include="..\shared\ap\ap_survival_gamerules.cpp" />
-    <ClCompile Include="..\shared\deferred\CDefLight.cpp" />
-    <ClCompile Include="..\shared\deferred\CDefLightContainer.cpp" />
-    <ClCompile Include="..\shared\deferred\CDefLightGlobal.cpp" />
-    <ClCompile Include="..\shared\deferred\deferred_shared_common.cpp" />
     <ClCompile Include="..\shared\in\in_ammodef.cpp" />
     <ClCompile Include="..\shared\in\in_gamemovement.cpp" />
     <ClCompile Include="..\shared\in\in_gamerules.cpp" />
     <ClCompile Include="..\shared\in\in_playeranimstate.cpp" />
+    <ClCompile Include="..\shared\in\in_player_inventory.cpp" />
     <ClCompile Include="..\shared\in\in_player_shared.cpp" />
     <ClCompile Include="..\shared\in\in_team.cpp" />
     <ClCompile Include="..\shared\in\in_weapon_parse.cpp" />
+    <ClCompile Include="..\shared\in\item_object.cpp" />
+    <ClCompile Include="..\shared\in\layersound.cpp" />
     <ClCompile Include="..\shared\in\multiplayer_animstate.cpp" />
     <ClCompile Include="..\shared\in\weapons_macro.cpp" />
     <ClCompile Include="..\shared\in\weapon_basemachinegun.cpp" />
@@ -401,7 +401,6 @@ if exist "$(TargetDir)"$(ProjectName).pdb copy "$(TargetDir)"$(ProjectName).pdb 
     </ClCompile>
     <ClCompile Include="..\shared\debugoverlay_shared.cpp" />
     <ClCompile Include="..\shared\decals.cpp" />
-    <ClCompile Include="deferred\cdeferred_manager_server.cpp" />
     <ClCompile Include="doors.cpp" />
     <ClCompile Include="..\..\public\dt_send.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -557,14 +556,18 @@ if exist "$(TargetDir)"$(ProjectName).pdb copy "$(TargetDir)"$(ProjectName).pdb 
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
       </PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="in\ai_basemelee_npc.cpp" />
+    <ClCompile Include="in\ai_base_infected.cpp" />
+    <ClCompile Include="in\ai_behavior_climb.cpp" />
+    <ClCompile Include="in\behavior_melee_character.cpp" />
     <ClCompile Include="in\director.cpp" />
-    <ClCompile Include="in\director_gamemodes.cpp" />
+    <ClCompile Include="in\director_item_manager.cpp" />
     <ClCompile Include="in\director_manager.cpp" />
+    <ClCompile Include="in\director_mode_normal.cpp" />
     <ClCompile Include="in\director_music.cpp" />
-    <ClCompile Include="in\director_status.cpp" />
+    <ClCompile Include="in\director_spawn.cpp" />
     <ClCompile Include="in\envmusic.cpp" />
     <ClCompile Include="in\func_weather.cpp" />
+    <ClCompile Include="in\in_bot.cpp" />
     <ClCompile Include="in\in_client.cpp" />
     <ClCompile Include="in\in_eventlog.cpp" />
     <ClCompile Include="in\in_gameinterface.cpp" />
@@ -579,6 +582,7 @@ if exist "$(TargetDir)"$(ProjectName).pdb copy "$(TargetDir)"$(ProjectName).pdb 
     <ClCompile Include="in\npc_infected.cpp" />
     <ClCompile Include="in\npc_surivor.cpp" />
     <ClCompile Include="in\players_manager.cpp" />
+    <ClCompile Include="in\roundrestart.cpp" />
     <ClCompile Include="item_world.cpp" />
     <ClCompile Include="..\..\public\keyframe\keyframe.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -914,18 +918,18 @@ if exist "$(TargetDir)"$(ProjectName).pdb copy "$(TargetDir)"$(ProjectName).pdb 
     <ClInclude Include="..\shared\activitylist.h" />
     <ClInclude Include="..\shared\ai_activity.h" />
     <ClInclude Include="..\shared\ap\ap_gamerules.h" />
+    <ClInclude Include="..\shared\ap\ap_playeranimstate.h" />
     <ClInclude Include="..\shared\ap\ap_survival_gamerules.h" />
-    <ClInclude Include="..\shared\deferred\CDefLight.h" />
-    <ClInclude Include="..\shared\deferred\CDefLightContainer.h" />
-    <ClInclude Include="..\shared\deferred\CDefLightGlobal.h" />
-    <ClInclude Include="..\shared\deferred\deferred_shared_common.h" />
     <ClInclude Include="..\shared\in\in_ammodef.h" />
     <ClInclude Include="..\shared\in\in_gamerules.h" />
     <ClInclude Include="..\shared\in\in_playeranimstate.h" />
+    <ClInclude Include="..\shared\in\in_player_inventory.h" />
     <ClInclude Include="..\shared\in\in_shareddefs.h" />
     <ClInclude Include="..\shared\in\in_team.h" />
     <ClInclude Include="..\shared\in\in_viewvectors.h" />
     <ClInclude Include="..\shared\in\in_weapon_parse.h" />
+    <ClInclude Include="..\shared\in\item_object.h" />
+    <ClInclude Include="..\shared\in\layersound.h" />
     <ClInclude Include="..\shared\in\multiplayer_animstate.h" />
     <ClInclude Include="..\shared\in\weapon_basemachinegun.h" />
     <ClInclude Include="..\shared\in\weapon_inbase.h" />
@@ -1042,8 +1046,6 @@ if exist "$(TargetDir)"$(ProjectName).pdb copy "$(TargetDir)"$(ProjectName).pdb 
     <ClInclude Include="CRagdollMagnet.h" />
     <ClInclude Include="cvisibilitymonitor.h" />
     <ClInclude Include="..\shared\debugoverlay_shared.h" />
-    <ClInclude Include="deferred\cdeferred_manager_server.h" />
-    <ClInclude Include="deferred\deferred_server_common.h" />
     <ClInclude Include="doors.h" />
     <ClInclude Include="..\..\public\edict.h" />
     <ClInclude Include="..\..\public\editor_sendcommand.h" />
@@ -1119,14 +1121,20 @@ if exist "$(TargetDir)"$(ProjectName).pdb copy "$(TargetDir)"$(ProjectName).pdb 
     <ClInclude Include="..\..\public\tier2\interval.h" />
     <ClInclude Include="..\..\public\iregistry.h" />
     <ClInclude Include="..\shared\iscenetokenprocessor.h" />
-    <ClInclude Include="in\ai_basemelee_npc.h" />
+    <ClInclude Include="in\ai_base_infected.h" />
+    <ClInclude Include="in\ai_behavior_climb.h" />
+    <ClInclude Include="in\behavior_melee_character.h" />
     <ClInclude Include="in\director.h" />
     <ClInclude Include="in\directordefs.h" />
+    <ClInclude Include="in\director_item_manager.h" />
     <ClInclude Include="in\director_manager.h" />
+    <ClInclude Include="in\director_mode_normal.h" />
     <ClInclude Include="in\director_music.h" />
+    <ClInclude Include="in\director_spawn.h" />
     <ClInclude Include="in\envmusic.h" />
     <ClInclude Include="in\func_weather.h" />
     <ClInclude Include="in\info_director.h" />
+    <ClInclude Include="in\in_bot.h" />
     <ClInclude Include="in\in_player.h" />
     <ClInclude Include="in\in_ragdoll.h" />
     <ClInclude Include="in\in_utils.h" />
@@ -1135,6 +1143,7 @@ if exist "$(TargetDir)"$(ProjectName).pdb copy "$(TargetDir)"$(ProjectName).pdb 
     <ClInclude Include="in\npc_infected.h" />
     <ClInclude Include="in\npc_survivor.h" />
     <ClInclude Include="in\players_manager.h" />
+    <ClInclude Include="in\roundrestart.h" />
     <ClInclude Include="iservervehicle.h" />
     <ClInclude Include="items.h" />
     <ClInclude Include="..\..\public\ivoiceserver.h" />

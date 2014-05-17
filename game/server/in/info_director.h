@@ -21,11 +21,11 @@ public:
 	virtual void InputHowAliveSpecials( inputdata_t &inputdata );
 	virtual void InputHowAliveBoss( inputdata_t &inputdata );
 
-	virtual void InputForceRelax( inputdata_t &inputdata );
-	virtual void InputForcePanic( inputdata_t &inputdata );
-	virtual void InputForceInfinitePanic( inputdata_t &inputdata );
-	virtual void InputForceBoss( inputdata_t &inputdata );
-	virtual void InputForceClimax( inputdata_t &inputdata );
+	virtual void InputStartNormal( inputdata_t &inputdata );
+	virtual void InputStartCombat( inputdata_t &inputdata );
+	virtual void InputStartCruelCombat( inputdata_t &inputdata );
+	virtual void InputStartBoss( inputdata_t &inputdata );
+	virtual void InputStartFinale( inputdata_t &inputdata );
 
 	virtual void InputSetPopulation( inputdata_t &inputdata );
 	virtual void InputDisclosePlayers( inputdata_t &inputdata );

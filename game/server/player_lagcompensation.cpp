@@ -14,6 +14,8 @@
 #include "BaseAnimatingOverlay.h"
 #include "tier0/vprof.h"
 
+#include "ai_basenpc.h"
+
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
@@ -30,15 +32,15 @@
 // Allow 4 units of error ( about 1 / 8 bbox width )
 #define LAG_COMPENSATION_ERROR_EPS_SQR ( 4.0f * 4.0f )
 
-ConVar sv_unlag( "sv_unlag", "1", FCVAR_DEVELOPMENTONLY, "Enables player lag compensation" );
-ConVar sv_maxunlag( "sv_maxunlag", "1.0", FCVAR_DEVELOPMENTONLY, "Maximum lag compensation in seconds", true, 0.0f, true, 1.0f );
-ConVar sv_lagflushbonecache( "sv_lagflushbonecache", "1", FCVAR_DEVELOPMENTONLY, "Flushes entity bone cache on lag compensation" );
+ConVar sv_unlag( "sv_unlag", "1", FCVAR_REPLICATED, "Enables player lag compensation" );
+ConVar sv_maxunlag( "sv_maxunlag", "1.0", FCVAR_REPLICATED, "Maximum lag compensation in seconds", true, 0.0f, true, 1.0f );
+ConVar sv_lagflushbonecache( "sv_lagflushbonecache", "1", FCVAR_REPLICATED, "Flushes entity bone cache on lag compensation" );
 ConVar sv_showlagcompensation( "sv_showlagcompensation", "0", FCVAR_CHEAT, "Show lag compensated hitboxes whenever a player is lag compensated." );
 ConVar sv_lagcompensationforcerestore( "sv_lagcompensationforcerestore", "1", FCVAR_CHEAT, "Don't test validity of a lag comp restore, just do it.");
 
-ConVar sv_unlag_fixstuck( "sv_unlag_fixstuck", "0", FCVAR_DEVELOPMENTONLY, "Disallow backtracking a player for lag compensation if it will cause them to become stuck" );
+ConVar sv_unlag_fixstuck( "sv_unlag_fixstuck", "0", FCVAR_REPLICATED, "Disallow backtracking a player for lag compensation if it will cause them to become stuck" );
 
-ConVar sv_lagpushticks( "sv_lagpushticks", "0", FCVAR_DEVELOPMENTONLY, "Push computed lag compensation amount by this many ticks." );
+ConVar sv_lagpushticks( "sv_lagpushticks", "0", FCVAR_REPLICATED, "Push computed lag compensation amount by this many ticks." );
 
 static CLagCompensationManager g_LagCompensationManager( "CLagCompensationManager" );
 ILagCompensationManager *lagcompensation = &g_LagCompensationManager;
@@ -125,6 +127,7 @@ void CLagCompensationManager::RemoveAdditionalEntity( CBaseEntity *pEntity )
 	EHANDLE eh;
 	eh = pEntity;
 	m_AdditionalEntities.Remove( eh );
+	m_CompensatedEntities.Remove( eh );
 }
 
 //-----------------------------------------------------------------------------

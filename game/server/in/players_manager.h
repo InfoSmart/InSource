@@ -36,7 +36,7 @@ public:
 	CIN_Player *GetLocal();
 
 	CIN_Player *GetRandom( int iTeam = TEAM_ANY );
-	CIN_Player *GetNear( const Vector &vPosition, float &fDistance, int iTeam = TEAM_ANY );
+	CIN_Player *GetNear( const Vector &vPosition, float &fDistance, int iTeam = TEAM_ANY, CBasePlayer *pExcept = NULL );
 	CIN_Player *GetNear( const Vector &vPosition, int iTeam = TEAM_ANY );
 
 	// Rutas
@@ -60,6 +60,10 @@ public:
 	virtual bool InVisibleCone( const Vector &vPosition );
 	virtual bool InVisibleCone( CBaseEntity *pEntity );
 
+	// Lecciones
+	void SendLesson( const char *pLesson, CIN_Player *pPlayer, bool bOnce = false, CBaseEntity *pSubject = NULL );
+	void SendAllLesson( const char *pLesson, bool bOnce = false, CBaseEntity *pSubject = NULL );
+
 	// Recursos
 	virtual int GetHealth();
 
@@ -68,6 +72,7 @@ public:
 	virtual int GetConnected() { return m_iConnected; }
 	virtual int GetAllHealth() { return m_iHealth; }
 	virtual float GetAllSanity() { return m_flSanity; }
+	virtual int GetAllDejected() { return m_iDejected; }
 	virtual bool InCombat() { return m_bInCombat; }
 	virtual int GetWithWeapons() { return m_iWithWeapons; }
 	virtual int GetAmmoStatus() { return m_iAmmoStatus; }

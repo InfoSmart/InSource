@@ -8,15 +8,66 @@
 #include "movevars_shared.h"
 
 #include "BasePropDoor.h"
+#include "doors.h"
 #include "ai_basenpc.h"
 #include "func_breakablesurf.h"
 
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-//=========================================================
+//===============================================================================
+//===============================================================================
+void NormalizeAngle( float& fAngle )
+{
+	if (fAngle < 0.0f)
+		fAngle += 360.0f;
+	else if (fAngle >= 360.0f)
+		fAngle -= 360.0f;
+}
+
+//===============================================================================
+//===============================================================================
+void Utils::DeNormalizeAngle( float& fAngle )
+{
+	if (fAngle < -180.0f)
+		fAngle += 360.0f;
+	else if (fAngle >= 180.0f)
+		fAngle -= 360.0f;
+}
+
+//===============================================================================
+//===============================================================================
+void Utils::GetAngleDifference( QAngle const& angOrigin, QAngle const& angDestination, QAngle& angDiff )
+{
+	angDiff = angDestination - angOrigin;
+
+	Utils::DeNormalizeAngle( angDiff.x );
+	Utils::DeNormalizeAngle( angDiff.y );
+}
+
+//====================================================================
+// Devuelve si la entidad es una pared que puede romperse
+//====================================================================
+bool Utils::IsBreakableSurf( CBaseEntity *pEntity )
+{
+	// No puede recibir daño
+	if ( pEntity->m_takedamage != DAMAGE_YES )
+		return false;
+
+	// Es una superficie que se puede romper
+	if ( (dynamic_cast<CBreakableSurface *>(pEntity)) )
+		return true;
+
+	// Es una pared que se puede romper
+	if ( (dynamic_cast<CBreakable *>(pEntity)) )
+		return true;
+
+	return false;
+}
+
+//====================================================================
 // Devuelve si la entidad es un objeto que puede romperse
-//=========================================================
+//====================================================================
 bool Utils::IsBreakable( CBaseEntity *pEntity )
 {
 	if ( !pEntity )
@@ -30,7 +81,7 @@ bool Utils::IsBreakable( CBaseEntity *pEntity )
 	if ( (dynamic_cast<CBreakableProp *>(pEntity)) )
 		return true;
 
-	// Es una entidad que se puede romper
+	// Es una pared que se puede romper
 	if ( (dynamic_cast<CBreakable *>(pEntity)) )
 		return true;
 
@@ -53,9 +104,30 @@ bool Utils::IsBreakable( CBaseEntity *pEntity )
 	return false;
 }
 
-//=========================================================
+//====================================================================
+// Devuelve si la entidad es una puerta
+//====================================================================
+bool Utils::IsDoor( CBaseEntity *pEntity )
+{
+	if ( !pEntity )
+		return false;
+
+	CBaseDoor *pDoor = dynamic_cast<CBaseDoor *>( pEntity );
+
+	if ( pDoor )
+		return true;
+
+	CBasePropDoor *pPropDoor = dynamic_cast<CBasePropDoor *>( pEntity );
+
+	if ( pPropDoor )
+		return true;
+
+	return false;
+}
+
+//====================================================================
 // Devuelve el objeto con fisica más cercano
-//=========================================================
+//====================================================================
 CBaseEntity *Utils::FindNearestPhysicsObject( const Vector &vOrigin, float fMaxDist, float fMinMass, float fMaxMass, CBaseEntity *pFrom )
 {
 	CBaseEntity *pFinalEntity	= NULL;
@@ -155,9 +227,9 @@ CBaseEntity *Utils::FindNearestPhysicsObject( const Vector &vOrigin, float fMaxD
 	return pFinalEntity;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si la entidad es un objeto con fisica.
-//=========================================================
+//====================================================================
 bool Utils::IsPhysicsObject( CBaseEntity *pEntity )
 {
 	if ( !pEntity )
@@ -172,14 +244,30 @@ bool Utils::IsPhysicsObject( CBaseEntity *pEntity )
 	return true;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el motor se esta quedando sin espacios para
 // las entidades
-//=========================================================
+//====================================================================
 bool Utils::RunOutEntityLimit( int iTolerance )
 {
 	if ( gEntList.NumberOfEntities() < (gpGlobals->maxEntities - iTolerance) )
 		return false;
 
 	return true;
+}
+
+//====================================================================
+// Crea la instancia de evento para crear una lección del Instructor
+//====================================================================
+IGameEvent *Utils::CreateLesson( const char *pLesson, CBaseEntity *pSubject )
+{
+	IGameEvent *pEvent = gameeventmanager->CreateEvent( pLesson, true );
+
+	if ( pEvent )
+	{
+		if ( pSubject )
+			pEvent->SetInt( "subject", pSubject->entindex() );
+	}
+
+	return pEvent;
 }

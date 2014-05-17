@@ -1,51 +1,20 @@
-//==== InfoSmart. Todos los derechos reservados .===========//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 //
 // Inteligencia artificial encargada de la creación de enemigos (hijos)
 // además de poder controlar la música, el clima y otros aspectos
 // del juego.
 //
-//
-// Estados del Director:
-//
-// SLEEP: El Director entrara en un estado de "sueño" en el que no
-// se crearán hijos de ningún tipo. El estado permanecerá hasta que el estres
-// de los jugadores baje.
-//
-// RELAXED: Un estado de relajación en la que solo se creará una
-// pequeña cantidad de hijos con proposito de ambientación.
-//
-// PANIC: Un evento de pánico en el que el Director creará varios
-// hijos que atacaran directamente a los jugadores.
-//
-// POST_PANIC: Se establece después del Pánico. Espera 5 segundos a que
-// los hijos sean eliminados para pasar a RELAXED, si esto no ocurre
-// se empezará a eliminar a los hijos que no sean visibles (asumiendo
-// que se han quedado atascados o "bugeados")
-//
-// BOSS: Es establecido cuando un Jefe reporta que ha visto a un jugador.
-// Durante este estado el Director no crea hijos (a menos que este en Dificil)
-// y el Director de Música se encarga de reproducir música del jefe.
-//
-// CLIMAX: Es establecido cuando el mapa realiza el evento final de escape.
-// Durante este estado el Director empezará a crear hijos y jefes infinitamente
-// con el fin de capturar/eliminar a los jugadores antes de que puedan escapar.
-//
-// GAMEOVER: Es estabecido cuando el Director detecta que todos los jugadores
-// han muerto o no pueden continuar. Se reproduce una canción para la ocación y
-// se  reinicia el mapa.
-//
-//==========================================================//
+//=====================================================================//
 
 #include "cbase.h"
 #include "director.h"
 
 #include "director_manager.h"
 #include "director_music.h"
+#include "director_item_manager.h"
 
-#ifdef APOCALYPSE
-	#include "ap_director.h"
-	#include "ap_director_music.h"
-#endif
+// Modos de Juego
+#include "director_mode_normal.h"
 
 #include "in_player.h"
 #include "players_manager.h"
@@ -54,91 +23,111 @@
 #include "in_utils.h"
 
 #include "ai_basenpc.h"
+#include "filesystem.h"
 
 #include "soundent.h"
 #include "engine/IEngineSound.h"
 
-#ifndef DIRECTOR_CUSTOM
+// Creamos la instancia a este sistema
+#ifndef CUSTOM_DIRECTOR
 	CDirector g_Director;
-	CDirector* Director = &g_Director;
+	CDirector *Director = &g_Director;
 #endif
 
-//=========================================================
+//====================================================================
 // Comandos de consola
-//=========================================================
+//====================================================================
 
 ConVar director_debug( "director_debug", "0", 0, "Permite imprimir información de depuración del Director" );
-ConVar director_max_alive( "director_max_alive", "50", FCVAR_SERVER, "Establece la cantidad máxima de hijos vivos que puede mantener el Director");
-ConVar director_gameover_wait( "director_gameover_wait", "10", FCVAR_CHEAT );
+ConVar director_max_common_alive( "director_max_common_alive", "30", FCVAR_SERVER, "Establece la cantidad máxima de hijos vivos que puede mantener el Director");
 
-ConVar director_min_distance("director_min_distance", "800", FCVAR_SERVER, "Distancia mínima en la que se debe encontrar un hijo de los jugadores");
-ConVar director_max_distance("director_max_distance", "2000", FCVAR_SERVER, "Distancia máxima en la que se debe encontrar un hijo de los jugadores");
+ConVar director_min_distance("director_min_distance", "600", FCVAR_SERVER, "Distancia mínima en la que se debe encontrar un hijo de los jugadores");
+ConVar director_max_distance("director_max_distance", "2500", FCVAR_SERVER, "Distancia máxima en la que se debe encontrar un hijo de los jugadores");
+ConVar director_danger_distance( "director_danger_distance", "700", FCVAR_SERVER, "" );
 
 ConVar director_max_boss_alive("director_max_boss_alive", "2", FCVAR_SERVER, "Cantidad máxima de jefes vivos que puede mantener el Director");
 ConVar director_no_boss("director_no_boss", "0", FCVAR_CHEAT, "");
 
-ConVar director_spawn_outview("director_spawn_outview", "1", FCVAR_SERVER | FCVAR_CHEAT, "Establece si se deben crear hijos fuera de la visión de los jugadores");
-ConVar director_allow_sleep("director_allow_sleep", "1", FCVAR_SERVER | FCVAR_CHEAT, "Establece si el Director puede dormir");
-ConVar director_mode("director_mode", "1", FCVAR_SERVER);
+ConVar director_spawn_outview( "director_spawn_outview", "1", FCVAR_SERVER | FCVAR_CHEAT, "Establece si se deben crear hijos fuera de la visión de los jugadores" );
+ConVar director_allow_sleep( "director_allow_sleep", "1", FCVAR_SERVER | FCVAR_CHEAT, "Establece si el Director puede dormir" );
+ConVar director_mode( "director_mode", "1", FCVAR_SERVER );
 
-ConVar director_spawn_ambient_interval("director_spawn_ambient_interval", "15", FCVAR_SERVER);
+ConVar director_spawn_ambient_interval( "director_spawn_ambient_interval", "15", FCVAR_SERVER );
 ConVar director_check_unreachable( "director_check_unreachable", "1", FCVAR_SERVER );
 
 ConVar director_gameover( "director_gameover", "1", FCVAR_CHEAT | FCVAR_SERVER );
+ConVar director_gameover_wait( "director_gameover_wait", "10", FCVAR_CHEAT );
 
-//=========================================================
+//====================================================================
 // Macros
-//=========================================================
-
-#define MAX_ALIVE		director_max_alive.GetInt()
-#define GAMEOVER_WAIT	director_gameover_wait.GetInt()
-
-#define MIN_DISTANCE	director_min_distance.GetInt()
-#define MAX_DISTANCE	director_max_distance.GetInt()
-
-#define MAX_BOSS_ALIVE	director_max_boss_alive.GetInt()
-#define NO_BOSS			director_no_boss.GetBool()
-
-#define SPAWN_OUTVIEW	director_spawn_outview.GetBool()
-#define ALLOW_SLEEP		director_allow_sleep.GetBool()
-
-#define CHECK_UNREACHABLE director_check_unreachable.GetBool()
-#define ALLOW_GAMEOVER director_gameover.GetBool()
+//====================================================================
 
 double round( double number )
 {
     return number < 0.0 ? ceil(number - 0.5) : floor(number + 0.5);
 }
 
-//=========================================================
-// Información y Red
-//=========================================================
+//====================================================================
+// Información
+//====================================================================
+
+BEGIN_SCRIPTDESC_ROOT( CDirector, SCRIPT_SINGLETON "El Director" )
+
+	DEFINE_SCRIPTFUNC( IsStatus, "" )
+	DEFINE_SCRIPTFUNC( IsPhase, "" )
+	DEFINE_SCRIPTFUNC( IsAngry, "" )
+	DEFINE_SCRIPTFUNC( GetTeamGood, "" )
+	DEFINE_SCRIPTFUNC( GetTeamEvil, "" )
+
+	DEFINE_SCRIPTFUNC( InDangerZone, "" )
+	DEFINE_SCRIPTFUNC( ChildsVisibles, "" )
+
+	DEFINE_SCRIPTFUNC( GetStatusName, "" )
+	DEFINE_SCRIPTFUNC( GetPhaseName, "" )
+	DEFINE_SCRIPTFUNC( GetAngryName, "" )
+	DEFINE_SCRIPTFUNC( GetStatsName, "" )
+
+END_SCRIPTDESC();
+
+//====================================================================
+// Constructor
+//====================================================================
 CDirector::CDirector() : CAutoGameSystemPerFrame( "CDirector" )
 {
+	
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+// Inicia el sistema del Director
+//====================================================================
 bool CDirector::Init()
 {
 	NewMap();
 	NewCampaign();
 
+	SetupGamemodes();
 	return true;
 }
 
-//=========================================================
+//====================================================================
+// Ajusta las instancias para cada modo de Juego
+//====================================================================
+void CDirector::SetupGamemodes()
+{
+	m_pGameModes[ GAME_MODE_NONE ] = new CDR_Normal_GM();
+}
+
+//====================================================================
 // Inicia la información para un nuevo mapa
-//=========================================================
+//====================================================================
 void CDirector::NewMap()
 {
+	Director->SetStatus( ST_NORMAL );
+	Director->SetPhase( PH_RELAX, 10 );
+
 	// Invalidamos los cronometros
 	m_hLeft4Boss.Invalidate();
-	m_hLeft4Panic.Invalidate();
-	m_hLeft4FinishPanic.Invalidate();
-	m_hDisabledTime.Invalidate();
-	m_hEnd.Invalidate();
-	m_nPostPanicLimit.Invalidate();
+	m_hEndGame.Invalidate();
 
 	// Información
 	m_bSpawning			= false;
@@ -147,14 +136,15 @@ void CDirector::NewMap()
 	m_bMusicEnabled		= true;
 	m_pInfoDirector		= NULL;
 
-	m_bSurvivalTimeStarted	= false;
-	m_iSurvivalTime			= 0;
-
-	m_bPanicSuspended	= false;
-
-	m_iSpawnQueue		= 0;
-	m_iChildsAlive		= 0;
-	m_iChildsInDangerZone = 0;
+	m_iCombatChilds			= 0;
+	m_iCombatsCount			= 0;
+	m_iCombatWaves			= 0;
+	m_nLastCombatDuration.Invalidate();
+	m_iLastCombatSeconds	= 0;
+	m_iLastCombatDeaths		= 0;
+	
+	m_iCommonAlive			= 0;
+	m_iCommonInDangerZone	= 0;
 
 	m_iAmbientAlive		= 0;
 	m_iNextAmbientSpawn = gpGlobals->curtime;
@@ -163,34 +153,48 @@ void CDirector::NewMap()
 	m_iBossAlive	= 0;
 	m_iMaxBossAlive = -1;
 
+	// Necesitamos la entidad "info_director"
 	FindInfoDirector();
+
+	// Preparamos la maquina virtual
+	PrepareVM();
 }
 
-//=========================================================
+//====================================================================
 // Reinicia la información para una nueva campaña
-//=========================================================
+//====================================================================
 void CDirector::NewCampaign()
 {
 	// Información
 	m_iAngry			= ANGRY_LOW;
 	m_iPlayersDead		= 0;
 
-	m_iPanicChilds		= 0;
-	m_iPanicCount		= 0;
-	
-	m_iLastPanicDuration	= 0;
-	m_iLastPanicDeaths		= 0;
-
-	m_iChildsSpawned	= 0;
+	m_iCommonSpawned	= 0;
 	m_iAmbientSpawned	= 0;
 
 	m_iBossSpawned	= 0;
 	m_iBossKilled	= 0;
 }
 
-//=========================================================
+//====================================================================
+//====================================================================
+void CDirector::PrepareVM()
+{
+	if ( !g_pScriptVM )
+		return;
+	
+	g_pScriptVM->RegisterInstance( Director, "Director" );
+
+	KeyValues *pOptions = new KeyValues("DirectorOptions");
+	pOptions->LoadFromFile( filesystem, "scripts/director_options.txt", NULL );
+
+	CScriptKeyValues *pDirectorOptions = new CScriptKeyValues( pOptions );
+	g_pScriptVM->RegisterInstance( pDirectorOptions, "DirectorOptions" );
+}
+
+//====================================================================
 // Encuentra al info_director
-//=========================================================
+//====================================================================
 void CDirector::FindInfoDirector()
 {
 	// Ya lo tenemos
@@ -216,24 +220,25 @@ void CDirector::FindInfoDirector()
 	}
 }
 
-//=========================================================
+//====================================================================
 // Para el procesamiento del Director
-//=========================================================
+//====================================================================
 void CDirector::Stop()
 {
 	// Matamos a todos los hijos
 	DirectorManager->KillChilds();
 
 	// Paramos al Director de Música
-	DirectorMusic->Stop();
+	if ( InRules )
+		DirectorMusic->Stop();
 
 	// Desactivamos
 	m_bDisabled = true;
 }
 
-//=========================================================
+//====================================================================
 // Destruye al Director ( Al cerrar el Juego )
-//=========================================================
+//====================================================================
 void CDirector::Shutdown()
 {
 	// Paramos
@@ -241,14 +246,11 @@ void CDirector::Shutdown()
 
 	// Reiniciamos todo
 	Init();
-
-	// Paramos la música
-	//DirectorMusic->Shutdown();
 }
 
-//=========================================================
+//====================================================================
 // Nuevo Mapa - Antes de cargar las entidades
-//=========================================================
+//====================================================================
 void CDirector::LevelInitPreEntity()
 {
 	// Iniciamos a nuestros ayudantes
@@ -256,149 +258,180 @@ void CDirector::LevelInitPreEntity()
 	DirectorMusic->Init();
 }
 
-//=========================================================
+//====================================================================
 // Nuevo Mapa - Después de cargar las entidades
-//=========================================================
+//====================================================================
 void CDirector::LevelInitPostEntity()
 {
 	DirectorManager->OnNewMap();
 	DirectorMusic->OnNewMap();
 
-	// Reiniciamos
-	RestartPanic();
-	RestartBoss();
-
 	// Iniciamos
 	NewMap();
 }
 
-//=========================================================
+//====================================================================
 // Cerrando mapa - Antes de descargar las entidades
-//=========================================================
+//====================================================================
 void CDirector::LevelShutdownPreEntity()
 {
 	// Matamos a todos los hijos
 	DirectorManager->KillChilds();
-
-	// Paramos la música
-	//DirectorMusic->Shutdown();
 }
 
-//=========================================================
+//====================================================================
 // Cerrando mapa - Después de descargar las entidades
-//=========================================================
+//====================================================================
 void CDirector::LevelShutdownPostEntity()
 {
 }
 
-//=========================================================
+//====================================================================
 // Pensamiento - Antes de las entidades
-//=========================================================
+//====================================================================
 void CDirector::FrameUpdatePreEntityThink()
 {
 }
 
-//=========================================================
+//====================================================================
 // Pensamiento - Después de las entidades
-//=========================================================
+//====================================================================
 void CDirector::FrameUpdatePostEntityThink()
 {
 	// El Juego no ha empezado
 	if ( !InRules )
 	{
-		// Iniciamos relajados
-		Relaxed();
-
+		SetStatus( ST_NORMAL );
 		return;
 	}
 
+	// Director de Música
 	DirectorMusic->Think();
 
-	// A trabajar!
+	// ¡A trabajar!
 	Work();
 }
 
-//=========================================================
+//====================================================================
 // Comienza el trabajo del Director
-//=========================================================
+//====================================================================
 void CDirector::Work()
 {
 	// Imprimimos información de depuración
 	if ( director_debug.GetBool() )
 		PrintDebugInfo();
 
-	// Estamos en modo de edición de mapa o desactivados
+	// No podemos
 	if ( engine->IsInEditMode() || m_bDisabled )
-		return;
-
-	// Verificamos si la partida ha terminado
-	CheckGameover();
-
-	// La partida ha terminado
-	if ( Is(GAMEOVER) )
 		return;
 
 	// Aún no toca
 	if ( gpGlobals->curtime <= m_iNextWork )
 		return;
 
-	// Verificamos los hijos que estan vivos
-	ManageChilds();
+	// Verificamos si la partida ha terminado
+	if ( IsGameover() )
+		return;
 
-	// ¿Que haremos ahora?
-	ModWork();
+	// Comprobamos a nuestros hijos
+	CheckChilds();
 
 	// Calculemos mi nivel de enojo
 	UpdateAngry();
 
-	// Próxima actualización en .6s
-	m_iNextWork = gpGlobals->curtime + 0.6f;
-}
-
-//=========================================================
-// Verifica si la partida ha terminado
-//=========================================================
-void CDirector::CheckGameover()
-{
-	// Aún hay jugadores vivos
-	if ( PlysManager->m_iWithLife > 0 || PlysManager->GetConnected() <= 0 || !ALLOW_GAMEOVER )
+	// No hay un manejador para este modo de Juego
+	if ( GameMode() == NULL )
 	{
-		// Evitamos bugs...
-		if ( Is(GAMEOVER) )
-			Relaxed();
+		Warning( "================================================================================== \n");
+		Warning( "== [CDirector::Work] No hay un manejador para el Modo de Juego: %i \n", InRules->GameMode() );
+		Warning( "== Esto podria ocacionar un Crash !!! \n" );
+		Warning( "================================================================================== \n \n");
 
 		return;
 	}
 
-	// Todos los jugadores han muerto, la partida ha terminado.
-	if ( !Is(GAMEOVER) )
+	// Hacemos lo que el modo de Juego tenga que hacer
+	GameMode()->Work();
+
+	// Música
+	if ( m_bMusicEnabled )
+		DirectorMusic->Update();
+
+	// Próxima actualización en .6s
+	m_iNextWork = gpGlobals->curtime + .6f;
+}
+
+//====================================================================
+// Hace lo necesario para reiniciar el mapa
+//====================================================================
+void CDirector::RestartMap()
+{
+	// Reiniciamos al Director
+	NewMap();
+
+	// Matamos a todos nuestros Hijos
+	DirectorManager->KillChilds();
+
+	// Reiniciamos el mapa
+	InRules->CleanUpMap();
+
+	// Reaparecemos a todos los Jugadores
+	PlysManager->RespawnAll();
+}
+
+//====================================================================
+// Verifica si la partida ha terminado
+//====================================================================
+bool CDirector::IsGameover()
+{
+	// Aún hay Jugadores vivos
+	// No hay Jugadores conectados
+	// No queremos que el Director verifique
+	if ( PlysManager->GetWithLife() > 0 || PlysManager->GetConnected() <= 0 || !ALLOW_GAMEOVER )
 	{
-		Set( GAMEOVER );
+		// Evitamos bugs...
+		if ( IsStatus(ST_GAMEOVER) )
+		{
+			SetStatus( ST_NORMAL );
+		}
 
+		return false;
+	}
+
+	// Todos los jugadores han muerto, la partida ha terminado.
+	if ( !IsStatus(ST_GAMEOVER) )
+	{
+		SetStatus( ST_GAMEOVER );
+
+		// Hacemos un Fadeout
 		color32 black = {0, 0, 0, 255};
-		UTIL_ScreenFadeAll( black, (GAMEOVER_WAIT-3), 5.0f, FFADE_OUT );
+		UTIL_ScreenFadeAll( black, (GAMEOVER_WAIT-3), 5.0f, FFADE_OUT | FFADE_PURGE );
 
+		// Paramos la música
 		DirectorMusic->Stop();
 		PlysManager->StopMusic();
 	}
 
+	// Seguimos actualizando la música
 	DirectorMusic->Update();
 
 	// Todavía no podemos reiniciar la partida
 	if ( gpGlobals->curtime <= (m_flStatusTime+GAMEOVER_WAIT) )
-		return;
+		return true;
 
 	// Reiniciamos la partida
-	DirectorManager->KillChilds();
-	engine->ServerCommand("restartgame \n");
-	PlysManager->RespawnAll();
+	RestartMap();
+	DirectorMusic->Stop();
 
-	NewMap();
+	if ( DirectorItemManager )
+		DirectorItemManager->LevelInitPostEntity();
+
+	return true;
 }
 
-//=========================================================
+//====================================================================
 // Calcula el enojo del Director
-//=========================================================
+//====================================================================
 void CDirector::UpdateAngry()
 {
 	int iPoints			= 0;
@@ -412,13 +445,13 @@ void CDirector::UpdateAngry()
 	//
 	//  Número de Hijos que he creado
 	//
-	if ( m_iChildsSpawned >= 1000 )
+	if ( m_iCommonSpawned >= 1000 )
 	{
 		iPoints += 20;
 	}
 	else
 	{
-		iPoints += round( ( m_iChildsSpawned / 500 ) * 10 ); // 20%
+		iPoints += round( ( m_iCommonSpawned / 500 ) * 10 ); // 20%
 	}
 
 	//
@@ -441,13 +474,13 @@ void CDirector::UpdateAngry()
 	//
 	// Ya ha habido eventos de pánico
 	//
-	if ( m_iPanicCount >= 5 )
+	if ( m_iCombatsCount >= 5 )
 	{
 		iPoints += 10;
 	}
 	else
 	{
-		iPoints += round( ( m_iPanicCount / 5 ) * 10 ); // 10%
+		iPoints += round( ( m_iCombatsCount / 5 ) * 10 ); // 10%
 	}
 
 	//
@@ -466,9 +499,9 @@ void CDirector::UpdateAngry()
 	// Dificultad
 	//
 	if ( InRules->IsSkillLevel(SKILL_EASY) )
-		iPoints -= 20;
-	if ( InRules->IsSkillLevel(SKILL_MEDIUM) )
 		iPoints -= 10;
+	if ( InRules->IsSkillLevel(SKILL_MEDIUM) )
+		iPoints -= 5;
 
 	int iResult = round(iPoints / 25);
 	++iResult;
@@ -478,17 +511,15 @@ void CDirector::UpdateAngry()
 	if ( iResult > 4 )
 		iResult = 4;
 
-	//Msg("[CDirector::UpdateAngry] %i - %i \n", iPoints, iResult);
-
 	//
 	// Enojo final
 	//
 	m_iAngry = (DirectorAngry)iResult;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el modo de trabajo del Director
-//=========================================================
+//====================================================================
 bool CDirector::IsMode( int iStatus )
 {
 	int iValue = director_mode.GetInt();
@@ -499,54 +530,78 @@ bool CDirector::IsMode( int iStatus )
 	return ( iStatus == iValue );
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el estado del Director en una cadena
-//=========================================================
-const char *CDirector::GetStatusName( DirectorStatus iStatus )
+//====================================================================
+const char *CDirector::GetStatusName( int iStatus )
 {
-	if ( iStatus == INVALID )
+	if ( iStatus == ST_INVALID )
 		iStatus = m_iStatus;
 
 	switch ( iStatus )
 	{
-		case SLEEP:
-			return "Dormido";
+		case ST_NORMAL:
+			return "NORMAL";
 		break;
 
-		case RELAXED:
-			return "Relajado";
+		case ST_COMBAT:
+			return "COMBAT";
 		break;
 
-		case PANIC:
-			return "Evento de pánico";
+		case ST_FINALE:
+			return "FINALE / CLIMAX";
 		break;
 
-		case POST_PANIC:
-			return "Post-Pánico";
+		case ST_GAMEOVER:
+			return "GAMEOVER";
 		break;
 
-		case BOSS:
-			return "Jefe";
-		break;
-
-		case CLIMAX:
-			return "Climax";
-		break;
-
-		case GAMEOVER:
-			return "Juego terminado";
-		break;
-
-		default:
-			return "Desconocido";
+		case ST_BOSS:
+			return "JEFE";
 		break;
 	}
+
+	return "DESCONOCIDO";
 }
 
-//=========================================================
+//====================================================================
+// Devuelve la fase del Director en una cadena
+//====================================================================
+const char *CDirector::GetPhaseName( int iStatus )
+{
+	if ( iStatus == PH_INVALID )
+		iStatus = m_iPhase;
+
+	switch ( iStatus )
+	{
+		case PH_RELAX:
+			return "RELAX";
+		break;
+
+		case PH_BUILD_UP:
+			return "BUILD_UP";
+		break;
+
+		case PH_SANITY_FADE:
+			return "SANITY_FADE";
+		break;
+
+		case PH_POPULATION_FADE:
+			return "POPULATION_FADE";
+		break;
+
+		case PH_EVENT:
+			return "EVENT";
+		break;
+	}
+
+	return "DESCONOCIDO";
+}
+
+//====================================================================
 // Devuelve el nivel de enojo del Director en una cadena
-//=========================================================
-const char *CDirector::GetAngryName( DirectorAngry iStatus )
+//====================================================================
+const char *CDirector::GetAngryName( int iStatus )
 {
 	if ( iStatus == ANGRY_INVALID )
 		iStatus = m_iAngry;
@@ -554,7 +609,7 @@ const char *CDirector::GetAngryName( DirectorAngry iStatus )
 	switch ( iStatus )
 	{
 		case ANGRY_LOW:
-			return "¡Feliz!";
+			return "Feliz";
 		break;
 
 		case ANGRY_MEDIUM:
@@ -566,18 +621,16 @@ const char *CDirector::GetAngryName( DirectorAngry iStatus )
 		break;
 
 		case ANGRY_CRAZY:
-			return "¡Furioso!";
-		break;
-
-		default:
-			return "Desconocido";
+			return "Furioso";
 		break;
 	}
+
+	return "Desconocido";
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el estao general de los jugadores en una cadena
-//=========================================================
+//====================================================================
 const char *CDirector::GetStatsName( int iStatus )
 {
 	if ( iStatus == 0 )
@@ -607,86 +660,81 @@ const char *CDirector::GetStatsName( int iStatus )
 	}
 }
 
-//=========================================================
+//====================================================================
 // Imprime información útil del Director
-//=========================================================
+//====================================================================
 void CDirector::PrintDebugInfo()
 {
-	int iLine = 5;
-
-	int iForPanic	= (int)floor(m_hLeft4Panic.GetRemainingTime() + 0.5);
-	int iForFinish	= (int)floor(m_hLeft4FinishPanic.GetRemainingTime() + 0.5);
+	int iLine		= 5;
 	int iForBoss	= (int)floor(m_hLeft4Boss.GetRemainingTime() + 0.5);
 
 	Director_StatePrintf(++iLine, "DIRECTOR \n");
-	Director_StatePrintf(++iLine, "--------------------------- \n");
+	Director_StatePrintf(++iLine, "------------------------------------------ \n");
 
 	++iLine;
 
 	Director_StatePrintf(++iLine, "Estado: %s \n", GetStatusName() );
-	Director_StatePrintf(++iLine, "Poblacion: %i \n", m_iChildsSpawned );
-	Director_StatePrintf(++iLine, "Pendientes: %i \n", m_iSpawnQueue );
-	Director_StatePrintf(++iLine, "Vivos: %i ( maximo: %i ) \n", m_iChildsAlive, MaxChilds() );
-	Director_StatePrintf(++iLine, "Puntos de creacion posibles: %i \n", DirectorManager->m_hSpawnNodes.Count() );
+
+	if ( IsPhase(PH_RELAX) )
+	{
+		Director_StatePrintf(++iLine, "Fase: %s ( %is ) \n", GetPhaseName(), m_iPhaseValue );
+	}
+	else if ( IsPhase(PH_SANITY_FADE) )
+	{
+		Director_StatePrintf(++iLine, "Fase: %s ( %.2f < 20.0 ) \n", GetPhaseName(), PlysManager->GetAllSanity() );
+	}
+	else if ( IsPhase(PH_POPULATION_FADE) )
+	{
+		Director_StatePrintf(++iLine, "Fase: %s ( %i > 10 ) \n", GetPhaseName(), m_iCommonAlive );
+	}
+	else
+	{
+		Director_StatePrintf(++iLine, "Fase: %s \n", GetPhaseName() );
+	}
+
+	Director_StatePrintf(++iLine, "Poblacion: %i \n", m_iCommonSpawned );
+	Director_StatePrintf(++iLine, "Vivos: %i ( maximo: %i ) \n", m_iCommonAlive, MaxChilds() );
+	Director_StatePrintf(++iLine, "Visibles: %i \n", m_iCommonVisibles );
+
+	Director_StatePrintf(++iLine, "Puntos de creacion posibles: %i \n", DirectorManager->GetCandidateCount() );
 	Director_StatePrintf(++iLine, "Nivel de enojo: %s \n", GetAngryName() );
-	Director_StatePrintf(++iLine, "Distancia maxima: %f \n", MaxDistance() );
 
 	++iLine;
 
 	Director_StatePrintf(++iLine, "MUSICA \n");
-	Director_StatePrintf(++iLine, "--------------------------- \n");
+	Director_StatePrintf(++iLine, "------------------------------------------ \n");
 
 	++iLine;
 
-	Director_StatePrintf(++iLine, "Cercanos: %i \n", m_iChildsInDangerZone );
+	Director_StatePrintf(++iLine, "Cercanos: %i \n", m_iCommonInDangerZone );
 
-	if ( InRules->IsSurvivalTime() )
+	if ( !IsStatus(ST_FINALE) )
 	{
 		++iLine;
-
-		Director_StatePrintf(++iLine, "MODE TIME SURVIVAL \n");
-		Director_StatePrintf(++iLine, "--------------------------- \n");
-
-		++iLine;
-		
-		if ( m_bSurvivalTimeStarted )
-			Director_StatePrintf(++iLine, "Estado: HA COMENZADO \n");
-		else
-			Director_StatePrintf(++iLine, "Estado: NO HA COMENZADO \n");
-
-		Director_StatePrintf(++iLine, "Tiempo: %is \n", m_iSurvivalTime );
-	}
-
-	if ( !Is(CLIMAX) )
-	{
-		++iLine;
-		Director_StatePrintf(++iLine, "PANICO/HORDA \n");
-		Director_StatePrintf(++iLine, "--------------------------- \n");
+		Director_StatePrintf(++iLine, "COMBATE \n");
+		Director_StatePrintf(++iLine, "------------------------------------------ \n");
 		++iLine;
 
-		Director_StatePrintf(++iLine, "Hijos de la ultima: %i \n", m_iPanicChilds );
-		Director_StatePrintf(++iLine, "Han pasado: %i eventos \n", m_iPanicCount );
-		Director_StatePrintf(++iLine, "Duración de la ultima: %is \n", m_iLastPanicDuration );
-		Director_StatePrintf(++iLine, "Muertes de los jugadores de la ultima: %i \n", m_iLastPanicDeaths );
+		Director_StatePrintf(++iLine, "Hijos de la ultima: %i \n", m_iCombatChilds );
+		Director_StatePrintf(++iLine, "Han pasado: %i combates \n", m_iCombatsCount );
+		Director_StatePrintf(++iLine, "Duración de la ultima: %is \n", m_iLastCombatSeconds );
+		Director_StatePrintf(++iLine, "Muertes de la ultima: %i \n", m_iLastCombatDeaths );
 
-		if ( !IsMode(DIRECTOR_MODE_PASIVE) )
-			Director_StatePrintf(++iLine, "Proximo evento en: %is \n", iForPanic );
-
-		if ( Is(PANIC) )
-			Director_StatePrintf(++iLine, "Faltan: %i para terminar \n", iForFinish );
+		if ( IsStatus(ST_COMBAT) )
+			Director_StatePrintf(++iLine, "Faltan: %i hordas \n", m_iCombatWaves );
 	}
 
 	++iLine;
-	Director_StatePrintf(++iLine, "AMBIENTE \n");
-	Director_StatePrintf(++iLine, "--------------------------- \n");
+	Director_StatePrintf(++iLine, "HIJOS DE AMBIENTE \n");
+	Director_StatePrintf(++iLine, "------------------------------------------ \n");
 	++iLine;
 
 	Director_StatePrintf(++iLine, "Vivos: %i \n", m_iAmbientAlive );
 	Director_StatePrintf(++iLine, "Cantidad: %i \n", m_iAmbientSpawned );
 
 	++iLine;
-	Director_StatePrintf(++iLine, "JEFE \n");
-	Director_StatePrintf(++iLine, "--------------------------- \n");
+	Director_StatePrintf(++iLine, "JEFES \n");
+	Director_StatePrintf(++iLine, "------------------------------------------ \n");
 	++iLine;
 
 	Director_StatePrintf(++iLine, "Vivos: %i \n", m_iBossAlive );
@@ -695,7 +743,7 @@ void CDirector::PrintDebugInfo()
 
 	++iLine;
 	Director_StatePrintf(++iLine, "JUGADORES \n");
-	Director_StatePrintf(++iLine, "--------------------------- \n");
+	Director_StatePrintf(++iLine, "------------------------------------------ \n");
 	++iLine;
 
 	Director_StatePrintf(++iLine, "Vivos: %i \n", PlysManager->GetWithLife() );
@@ -709,95 +757,57 @@ void CDirector::PrintDebugInfo()
 		Director_StatePrintf(++iLine, "NO EN COMBATE \n");
 }
 
-//=========================================================
+//====================================================================
+// Devuelve la instancia del Modo de Juego
+//====================================================================
+CDR_Gamemode *CDirector::GameMode()
+{
+	if ( !InRules )
+		return NULL;
+
+	return m_pGameModes[ InRules->GameMode() ];
+}
+
+//====================================================================
 // Devuelve la distancia minima de creación
-//=========================================================
+//====================================================================
 float CDirector::MinDistance()
 {
 	float flDistance = director_min_distance.GetFloat();
 
-	// En un evento de pánico o Climax disminuimos la distancia
-	if ( Is(PANIC) || Is(CLIMAX) )
+	// Disminuimos la distancia
+	if ( IsStatus(ST_COMBAT) || IsStatus(ST_FINALE) )
 		flDistance -= 300;
 
 	return flDistance;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve la distancia máxima de creación
-//=========================================================
+//====================================================================
 float CDirector::MaxDistance()
 {
 	float flDistance = director_max_distance.GetFloat();
 
-	// Disminumos la distancia en una partida díficil, habrá más hijos juntos
+	// Disminuimos la distancia
 	if ( InRules->IsSkillLevel(SKILL_HARD) )
-		flDistance -= 500;
+		flDistance -= 300;
 
-	// En un evento de pánico o Climax disminuimos la distancia
-	if ( Is(PANIC) || Is(CLIMAX) )
+	// Disminuimos la distancia
+	if ( IsStatus(ST_COMBAT) || IsStatus(ST_FINALE) )
 		flDistance -= 300;
 
 	return flDistance;
 }
 
-//=========================================================
-// Reinicia la información para un próximo Pánico
-//=========================================================
-void CDirector::RestartPanic()
-{
-	// No hay eventos de pánico "automaticos" en el modo pasivo
-	if ( IsMode(DIRECTOR_MODE_PASIVE) )
-		return;
-
-	int iRand = RandomInt( 300, 400 );
-
-	switch ( InRules->GetSkillLevel() )
-	{
-		case SKILL_MEDIUM:
-			iRand = RandomInt( 200, 300 );
-		break;
-
-		case SKILL_HARD:
-			iRand = RandomInt( 180, 230 );
-		break;
-	}
-
-	m_hLeft4Panic.Start( iRand );
-}
-
-//=========================================================
-// Reinicia la información para un próximo Jefe
-//=========================================================
-void CDirector::RestartBoss()
-{
-	// Fácil: De 300 a 400 segundos
-	int iRand = RandomInt( 300, 400 );
-
-	switch ( InRules->GetSkillLevel() )
-	{
-		// Medio: 250 a 400 segundos
-		case SKILL_MEDIUM:
-			iRand = RandomInt( 250, 400 );
-		break;
-
-		// Dificil: 100 a 350 segundos
-		case SKILL_HARD:
-			iRand = RandomInt( 100, 350 );
-		break;
-	}
-
-	m_hLeft4Boss.Start( iRand );
-}
-
-//=========================================================
-// Devuelve si el NPC esta muy lejos de los jugadores
-//=========================================================
+//====================================================================
+// Devuelve si el Hijo esta muy lejos de los jugadores
+//====================================================================
 bool CDirector::IsTooFar( CBaseEntity *pEntity )
 {
-	float flDistance = MaxDistance();
+	float flMaxDistance = ( MaxDistance() + 1000 );
 
-	// 
+	// No hay nadie con vida
 	if ( PlysManager->GetWithLife() <= 0 )
 		return false;
 
@@ -809,27 +819,28 @@ bool CDirector::IsTooFar( CBaseEntity *pEntity )
 			continue;
 
 		// Es del equipo malvado
-		if ( pPlayer->GetTeamNumber() == TeamEvil() )
+		if ( pPlayer->GetTeamNumber() == GetTeamEvil() )
 			continue;
 
-		// Obtenemos la distancia del NPC a este jugador
-		float flDis	= pEntity->GetAbsOrigin().DistTo( pPlayer->GetAbsOrigin() );
+		// Obtenemos la distancia
+		float flDist = pEntity->GetAbsOrigin().DistTo( pPlayer->GetAbsOrigin() );
 
 		// Esta cerca
-		if ( flDis <= (flDistance * 1.5) )
+		if ( flDist <= flMaxDistance )
 			return false;
 	}
 
 	return true;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el NPC esta muy cerca de los jugadores
-//=========================================================
+//====================================================================
 bool CDirector::IsTooClose( CBaseEntity *pEntity )
 {
 	float flDistance = MinDistance();
 
+	// No hay nadie con vida
 	if ( PlysManager->GetWithLife() <= 0 )
 		return false;
 
@@ -840,166 +851,235 @@ bool CDirector::IsTooClose( CBaseEntity *pEntity )
 		if ( !pPlayer )
 			continue;
 
-		// Obtenemos la distancia del NPC a este jugador
-		float flDis	= pEntity->GetAbsOrigin().DistTo( pPlayer->GetAbsOrigin() );
+		// Es del equipo malvado
+		if ( pPlayer->GetTeamNumber() == GetTeamEvil() )
+			continue;
+
+		// Obtenemos la distancia
+		float flDist = pEntity->GetAbsOrigin().DistTo( pPlayer->GetAbsOrigin() );
 
 		// Esta cerca
-		if ( flDis < flDistance )
+		if ( flDist < flDistance )
 			return true;
 	}
 
 	return false;
 }
 
-//=========================================================
-// Mata a un hijo
-//=========================================================
+//====================================================================
+// Mata a un Hijo
+//====================================================================
 void CDirector::KillChild( CBaseEntity *pEntity )
 {
+	if ( pEntity->IsPlayer() )
+		return;
+
+	UTIL_Remove( pEntity );
+
 	// Es un Jefe
-	if ( pEntity->GetEntityName() == AllocPooledString(DIRECTOR_BOSS_NAME) && !pEntity->IsPlayer() )
+	/*if ( pEntity->GetEntityName() == AllocPooledString(DIRECTOR_BOSS_NAME) && !pEntity->IsPlayer() )
 	{
 		UTIL_Remove( pEntity );
 		return;
 	}
 
 	CTakeDamageInfo info( pEntity, pEntity, pEntity->GetMaxHealth(), DMG_GENERIC );
-	pEntity->TakeDamage( info );
+	pEntity->TakeDamage( info );*/
 }
 
-//=========================================================
+//====================================================================
 // [Evento] Hemos creado un hijo
-//=========================================================
-void CDirector::OnSpawnChild( CAI_BaseNPC *pNPC )
+//====================================================================
+void CDirector::OnSpawnChild( CBaseEntity *pEntity )
 {
-	++m_iChildsSpawned;
+	AddChildSlot( pEntity );
+	++m_iCommonSpawned;
 
-	// Quitamos uno de la cola
-	if ( m_iSpawnQueue > 0 )
-		--m_iSpawnQueue;
-
-	if ( Is(PANIC) )
-		++m_iPanicChilds;
+	// Un Hijo de Combate
+	if ( IsStatus(ST_COMBAT) )
+		++m_iCombatChilds;
 
 	// Hemos creado un hijo
+	GameMode()->OnSpawnChild( pEntity );
 	m_pInfoDirector->OnSpawnChild.FireOutput( m_pInfoDirector, m_pInfoDirector );
 }
 
-//=========================================================
+//====================================================================
 // [Evento] Hemos creado un jefe
-//=========================================================
-void CDirector::OnSpawnBoss( CAI_BaseNPC *pNPC )
+//====================================================================
+void CDirector::OnSpawnBoss( CBaseEntity *pEntity )
 {
-	// En el modo de Juego "Survival Time" los jefes 
-	// deben conocer la ubicación de los jugadores
-	if ( InRules->IsGameMode(GAME_MODE_SURVIVAL_TIME) )
-	{
-		CIN_Player *pPlayer = PlysManager->GetRandom( TEAM_HUMANS );
-
-		if ( pPlayer )
-		{
-			pNPC->UpdateEnemyMemory( pPlayer, pPlayer->GetAbsOrigin() );
-		}
-	}
-
 	++m_iBossSpawned;
 	m_bBossPendient = false;
 
+	AddChildSlot( pEntity );
+
 	// Hemos creado un jefe
+	GameMode()->OnSpawnBoss( pEntity );
 	m_pInfoDirector->OnSpawnBoss.FireOutput( m_pInfoDirector, m_pInfoDirector );
 }
 
-//=========================================================
+//====================================================================
 // [Evento] Hemos creado un hijo especial
-//=========================================================
-void CDirector::OnSpawnSpecial( CAI_BaseNPC *pNPC )
+//====================================================================
+void CDirector::OnSpawnSpecial( CBaseEntity *pEntity )
 {
 	++m_iSpecialsSpawned;
 
+	AddChildSlot( pEntity );
+
 	// Hemos creado un especial
+	GameMode()->OnSpawnSpecial( pEntity );
 	m_pInfoDirector->OnSpawnSpecial.FireOutput( m_pInfoDirector, m_pInfoDirector );
 }
 
-//=========================================================
+//====================================================================
 // [Evento] Hemos creado un hijo de ambiente
-//=========================================================
-void CDirector::OnSpawnAmbient( CAI_BaseNPC *pNPC )
+//====================================================================
+void CDirector::OnSpawnAmbient( CBaseEntity *pEntity )
 {
 	++m_iAmbientSpawned;
 
+	AddChildSlot( pEntity );
+
 	// Hemos creado un especial
+	GameMode()->OnSpawnAmbient( pEntity );
 	m_pInfoDirector->OnSpawnAmbient.FireOutput( m_pInfoDirector, m_pInfoDirector );
 }
 
-//=========================================================
+//====================================================================
 // [Evento] Un jugador ha sufrido daño
-//=========================================================
+//====================================================================
 void CDirector::OnPlayerHurt( CBasePlayer *pPlayer )
 {
 	m_iLastAttackTime = gpGlobals->curtime;
+	GameMode()->OnPlayerHurt( pPlayer );
 }
 
-//=========================================================
+//====================================================================
 // [Evento] Un jugador ha muerto
-//=========================================================
+//====================================================================
 void CDirector::OnPlayerKilled( CBasePlayer *pPlayer )
 {
 	// La horda se ha cobrado una vida
-	if ( Is(PANIC) || Is(POST_PANIC) )
+	if ( IsStatus(ST_COMBAT) )
 	{
-		++m_iLastPanicDeaths;
+		++m_iLastCombatDeaths;
 	}
 
 	// Nos hemos cobrado una vida más
 	++m_iPlayersDead;
+
+	GameMode()->OnPlayerKilled( pPlayer );
 }
 
-//=========================================================
-// Establece el estado actual
-//=========================================================
-void CDirector::Set( DirectorStatus iStatus )
+//====================================================================
+// Devuelve si se puede establecer el estado
+//====================================================================
+bool CDirector::CanSetStatus( DirectorStatus iNewStatus )
 {
-	Msg("[Director] %s -> %s \n", GetStatusName(), GetStatusName(iStatus) );
+	// El Final no puede cambiarse
+	//if ( IsStatus(ST_FINALE) )
+		//return false;
+
+	// Estamos bloqueando todos los estados
+	if ( m_bBlockAllStatus )
+		return false;
+
+	return true;
+}
+
+//====================================================================
+// Devuelve si se puede establecer una fase
+//====================================================================
+bool CDirector::CanSetPhase( DirectorPhase iNewPhase )
+{
+	return true;
+}
+
+//====================================================================
+// Establece el estado actual
+//====================================================================
+void CDirector::SetStatus( DirectorStatus iStatus )
+{
+	// No podemos cambiar
+	if ( !CanSetStatus(iStatus) )
+		return;
 
 	m_iStatus		= iStatus;
 	m_flStatusTime	= gpGlobals->curtime;
+
+	if ( GameMode() )
+		GameMode()->OnSetStatus( iStatus );
 }
 
-//=========================================================
-// Devuelve si el Director quiere forzar una clase de hijo
-//=========================================================
-const char *CDirector::ForceChildClass()
+//====================================================================
+// Establece la fase actual
+//====================================================================
+void CDirector::SetPhase( DirectorPhase iPhase, int iValue )
 {
-	return NULL;
+	// No podemos cambiar
+	if ( !CanSetPhase(iPhase) )
+		return;
+
+	m_iPhase		= iPhase;
+	m_iPhaseValue	= iValue;
+	m_flPhaseTime	= gpGlobals->curtime;
+
+	if ( GameMode() )
+		GameMode()->OnSetPhase( iPhase, iValue );
 }
 
-//=========================================================
+//====================================================================
+// Comienza un Combate
+//====================================================================
+void CDirector::StartCombat( CBaseEntity *pActivator, int iWaves, bool bInfinite )
+{
+	// Reiniciamos estadisticas
+	m_iCombatChilds			= 0;
+	m_iCombatWaves			= iWaves;
+	m_nLastCombatDuration.Start();
+	m_iLastCombatSeconds	= 0;
+	m_iLastCombatDeaths		= 0;
+
+	++m_iCombatsCount;
+
+	SetStatus( ST_COMBAT );
+
+	if ( bInfinite )
+		SetPhase( PH_CRUEL_BUILD_UP );
+}
+
+//====================================================================
 // Devuelve la cantidad máxima de hijos que se pueden crear
-//=========================================================
+//====================================================================
 int CDirector::MaxChilds()
 {
 	int iMax = MAX_ALIVE;
 
+	//
+	// No queremos crear más Hijos
+	//
+	if ( IsStatus(ST_GAMEOVER) || IsPhase(PH_RELAX) || IsPhase(PH_SANITY_FADE) || IsPhase(PH_POPULATION_FADE) )
+		return 0;
+
+	//
 	// Nos estamos quedando sin espacios ¡debemos parar!
+	//
 	if ( Utils::RunOutEntityLimit( iMax+DIRECTOR_SECURE_ENTITIES ) )
 		return 0;
 
-	// Aumentamos o disminuimos según el nivel de dificultad
+	//
+	// Entre más fácil, menos hijos
+	//
 	switch ( InRules->GetSkillLevel() )
 	{
 		case SKILL_EASY:
-			if ( Is(RELAXED) )
-				iMax -= 20;
+			iMax -= 10;
 		break;
 
 		case SKILL_MEDIUM:
-			if ( Is(RELAXED) )
-				iMax -= 15;
-		break;
-
-		case SKILL_HARD:
-			if ( Is(RELAXED) )
-				iMax -= 5;
+			iMax -= 5;
 		break;
 	}
 
@@ -1007,7 +1087,7 @@ int CDirector::MaxChilds()
 	// Los Jugadores tienen una mala partida...
 	//
 	if ( PlysManager->GetStatus() <= STATS_POOR )
-		iMax -= 15;
+		iMax -= 5;
 
 	//
 	// No podemos sobrepasar el limite indicado
@@ -1021,18 +1101,12 @@ int CDirector::MaxChilds()
 	if ( iMax <= 0 )
 		iMax = MAX_ALIVE;
 
-	//
-	// Algo aún más interesante ha ocurrido
-	//
-	if ( iMax <= 0 )
-		iMax = 30;
-
 	return iMax;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve el tipo de Hijo
-//=========================================================
+//====================================================================
 int CDirector::GetChildType( CBaseEntity *pEntity )
 {
 	bool bIsBoss	= FStrEq( STRING(pEntity->GetEntityName()), DIRECTOR_BOSS_NAME );
@@ -1051,49 +1125,120 @@ int CDirector::GetChildType( CBaseEntity *pEntity )
 	return DIRECTOR_CHILD;
 }
 
-//=========================================================
-// Maneja a los hijos
-//=========================================================
-void CDirector::ManageChilds()
+//====================================================================
+// Libera el Slot del Hijo
+//====================================================================
+void CDirector::FreeChildSlot( CBaseEntity *pEntity )
 {
-	// Reiniciamos la información
-	m_iChildsAlive			= 0;
-	m_iChildsInDangerZone	= 0;
-	m_iChildsVisibles		= 0;
+	/*for ( int i = 0; i < DIRECTOR_MAX_CHILDS; ++i )
+	{
+		CBaseEntity *pChild = m_pChilds[i];
+
+		if ( !pChild )
+			continue;
+
+		if ( pChild != pEntity )
+			continue;
+
+		FreeChildSlot( i, true );
+		break;
+	}*/
+}
+
+//====================================================================
+// Libera el Slot del Hijo
+//====================================================================
+void CDirector::FreeChildSlot( int iSlot, bool bRemove )
+{
+	/*CBaseEntity *pChild = m_pChilds[iSlot];
+
+	if ( bRemove && pChild )
+	{
+		UTIL_Remove( pChild );
+	}
+
+	m_pChilds[ iSlot ] = NULL;*/
+}
+
+//====================================================================
+// Agrega un Hijo a la lista y devuelve su ID
+//====================================================================
+int CDirector::AddChildSlot( CBaseEntity *pEntity )
+{
+	/*for ( int i = 0; i < DIRECTOR_MAX_CHILDS; ++i )
+	{
+		CBaseEntity *pChild = m_pChilds[i];
+
+		// Slot ocupado
+		if ( pChild )
+			continue;
+
+		m_pChilds[i] = pEntity;
+		return i;
+	}*/
+
+	return -1;
+}
+
+//====================================================================
+// Verifica los hijos que siguen vivos
+//====================================================================
+void CDirector::CheckChilds()
+{
+	// Reiniciamos las estadisticas
+	m_iCommonAlive			= 0;
+	m_iCommonInDangerZone	= 0;
+	m_iCommonVisibles		= 0;
 	m_iBossAlive			= 0;
 	m_iAmbientSpawned		= 0;
 	m_iAmbientAlive			= 0;
 
 	CBaseEntity *pChild = NULL;
 
-	//
-	// NPC
-	//
 	do
 	{
-		pChild = (CBaseEntity *)gEntList.FindEntityByName( pChild, "director_*" );
+		pChild = gEntList.FindEntityByName( pChild, "director_*" );
 
-		// El hijo ya no existe o acaba de ser eliminado
-		if ( !pChild || !pChild->IsAlive() )
+		// No existe
+		if ( pChild == NULL )
 			continue;
 
-		// No es de los mios...
-		if ( pChild->GetTeamNumber() != TeamEvil() )
+		// Esta muerto, no nos sirve
+		if ( !pChild->IsAlive() )
 			continue;
 
 		CheckChild( pChild );
 
 	} while ( pChild );
+
+	/*for ( int i = 0; i < DIRECTOR_MAX_CHILDS; ++i )
+	{
+		CBaseEntity *pChild = m_pChilds[i];
+
+		// No existe
+		if ( pChild == NULL )
+			continue;
+
+		// Esta muerto, no nos sirve
+		if ( !pChild->IsAlive() )
+		{
+			FreeChildSlot( i );
+			continue;
+		}
+
+		CheckChild ( pChild );
+	}*/
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+// Comprueba si el Hijo aún sirve
+//====================================================================
 void CDirector::CheckChild( CBaseEntity *pEntity )
 {
 	int iType = GetChildType( pEntity );
 
 	//
-	// Verificamos si esta muy lejos o no puede atacar
+	// Esta muy lejos de los Jugadores o no puede alcanzarlos
 	//
 	if ( CheckDistance(pEntity) || CheckUnreachable(pEntity)  )
 	{
@@ -1110,7 +1255,7 @@ void CDirector::CheckChild( CBaseEntity *pEntity )
 		}
 		else if ( iType != DIRECTOR_AMBIENT_CHILD )
 		{
-			--m_iChildsSpawned;
+			--m_iCommonSpawned;
 		}
 
 		return;
@@ -1121,7 +1266,7 @@ void CDirector::CheckChild( CBaseEntity *pEntity )
 	//
 	if ( PlysManager->IsVisible(pEntity) )
 	{
-		++m_iChildsVisibles;
+		++m_iCommonVisibles;
 	}
 
 	//
@@ -1148,20 +1293,20 @@ void CDirector::CheckChild( CBaseEntity *pEntity )
 	{
 		// Obtenemos la distancia a la que se encuentra del jugador más cercano
 		float flDistance;
-		PlysManager->GetNear( pEntity->GetAbsOrigin(), flDistance, TeamGood() );
+		PlysManager->GetNear( pEntity->GetAbsOrigin(), flDistance, GetTeamGood() );
 
-		// Tienes a un jugador como enemigo y estas muy cerca de el
-		if ( pEntity->GetEnemy() && pEntity->GetEnemy()->IsPlayer() && flDistance <= 800 )
-			++m_iChildsInDangerZone;
+		// Esta cerca
+		if ( flDistance <= DANGER_DISTANCE )
+			++m_iCommonInDangerZone;
 
-		++m_iChildsAlive;
+		++m_iCommonAlive;
 	}
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el Hijo puede ser eliminado por estar muy
 // lejos de los Jugadores
-//=========================================================
+//====================================================================
 bool CDirector::CheckDistance( CBaseEntity *pEntity )
 {
 	// Te estan viendo
@@ -1176,7 +1321,7 @@ bool CDirector::CheckDistance( CBaseEntity *pEntity )
 
 	// Obtenemos la distancia a la que se encuentra del jugador más cercano
 	float flDistance;
-	PlysManager->GetNear( pEntity->GetAbsOrigin(), flDistance, TeamGood() );
+	PlysManager->GetNear( pEntity->GetAbsOrigin(), flDistance, GetTeamGood() );
 	
 	// Solo podemos eliminar a un Jefe si esta a una gran distancia.
 	if ( iType == DIRECTOR_BOSS )
@@ -1194,18 +1339,24 @@ bool CDirector::CheckDistance( CBaseEntity *pEntity )
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el Hijo puede ser eliminado por no tener
 // una ruta de ataque.
-//=========================================================
+//====================================================================
 bool CDirector::CheckUnreachable( CBaseEntity *pEntity )
 {
 	// No eres un NPC
 	if ( !pEntity->IsNPC() )
 		return false;
 
+	CAI_BaseNPC *pNPC = pEntity->MyNPCPointer();
+
 	// Te estan viendo
 	if ( PlysManager->InVisibleCone(pEntity) )
+		return false;
+
+	// Estas muy cerca de los Jugadores
+	if ( IsTooClose(pEntity) )
 		return false;
 
 	// Nos piden que no hagamos esta verificación
@@ -1217,18 +1368,19 @@ bool CDirector::CheckUnreachable( CBaseEntity *pEntity )
 		return false;
 
 	// ¿Me estas diciendo que no puedes atacar? Dale paso a alguien más
-	if ( pEntity->MyNPCPointer()->IsUnreachable( pEntity->GetEnemy() ) )
+	if ( pNPC->IsUnreachable(pEntity->GetEnemy()) )
 	{
+		DirectorManager->AddBan( pNPC->GetAbsOrigin(), BAN_DURATION_UNREACHABLE );
 		return true;
 	}
 
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el Director le ha proporcionado información
 // acerca de un enemigo al Hijo
-//=========================================================
+//====================================================================
 bool CDirector::CheckNewEnemy( CBaseEntity *pEntity )
 {
 	// No es un NPC
@@ -1238,12 +1390,7 @@ bool CDirector::CheckNewEnemy( CBaseEntity *pEntity )
 	int iType = GetChildType( pEntity );
 
 	// Solo podemos dar un enemigo si estamos en un evento de Pánico o Climax
-	if ( !Is(PANIC) && !Is(CLIMAX) )
-		return false;
-
-	// Los Jefes no deben alertarse en un evento de Pánico
-	// TODO: ¿O si?
-	if ( Is(PANIC) && iType == DIRECTOR_BOSS )
+	if ( !IsStatus(ST_COMBAT) && !IsStatus(ST_FINALE) )
 		return false;
 
 	// Ya tiene un enemigo
@@ -1259,16 +1406,15 @@ bool CDirector::CheckNewEnemy( CBaseEntity *pEntity )
 	// Este es perfecto
 	if ( pPlayer )
 	{
-		pEntity->MyNPCPointer()->SetEnemy( pPlayer );
 		pEntity->MyNPCPointer()->UpdateEnemyMemory( pPlayer, pPlayer->GetAbsOrigin() );
 	}
 	
 	return true;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si es posible crear más hijos
-//=========================================================
+//====================================================================
 bool CDirector::CanSpawnChilds()
 {
 	int iMax = MaxChilds();
@@ -1277,40 +1423,28 @@ bool CDirector::CanSpawnChilds()
 	if ( Utils::RunOutEntityLimit( MAX_ALIVE+DIRECTOR_SECURE_ENTITIES ) )
 		return false;
 
-	// En Post-Pánico, queremos eliminar, no crear...
-	if ( Is(POST_PANIC) )
+	// El Modo de Juego dice que no
+	if ( !GameMode()->CanSpawnChilds() )
+		return false;
+
+	// No hay que crear en estas fases
+	if ( IsPhase(PH_RELAX) || IsPhase(PH_SANITY_FADE) || IsPhase(PH_POPULATION_FADE) )
 		return false;
 
 	// Hijos al limite, no podemos con más
-	if ( m_iChildsAlive >= iMax )
+	if ( m_iCommonAlive >= iMax )
 		return false;
 
 	// Estamos en proceso de crear más
 	if ( m_bSpawning )
 		return false;
 
-	// Estamos en un evento de Climax o Pánico ¡CLARO!
-	if ( Is(CLIMAX) || Is(PANIC) )
-		return true;
-
-	// Si estamos con un Jefe solo crear hijos si estamos en Dificil
-	if ( Is(BOSS) && InRules->IsSkillLevel(SKILL_HARD) )
-		return true;
-
-	// No tienen la partida muy fácil
-	if ( PlysManager->GetStatus() <= STATS_POOR )
-	{
-		// Suertudos
-		if ( RandomInt(1, 100) > 20 )
-			return false;
-	}
-
 	return true;
 }
 
-//=========================================================
+//====================================================================
 // Procesa a todos los tipos de hijos
-//=========================================================
+//====================================================================
 void CDirector::HandleAll()
 {
 	HandleChilds();
@@ -1319,27 +1453,28 @@ void CDirector::HandleAll()
 	HandleSpecials();
 }
 
-//=========================================================
+//====================================================================
 // Procesa la creación de hijos normales
-//=========================================================
+//====================================================================
 void CDirector::HandleChilds()
 {
 	// No podemos crear más hijos ahora mismo
 	if ( !CanSpawnChilds() )
 		return;
 
-	// Hijos que faltan para llegar al limite
-	m_iSpawnQueue = MaxChilds() - m_iChildsAlive;
-
 	// Comenzamos la creación
 	DirectorManager->StartSpawn( DIRECTOR_CHILD );
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si es posible crear hijos de ambiente
-//=========================================================
+//====================================================================
 bool CDirector::CanSpawnAmbient()
 {
+	// Nos estamos quedando sin espacios ¡debemos parar!
+	if ( Utils::RunOutEntityLimit( MAX_ALIVE+DIRECTOR_SECURE_ENTITIES ) )
+		return false;
+
 	// No debe haber más de 8 hijos de ambiente
 	if ( m_iAmbientAlive >= 8 )
 		return false;
@@ -1348,13 +1483,9 @@ bool CDirector::CanSpawnAmbient()
 	if ( m_bSpawning )
 		return false;
 
-	// Aún no tica
+	// Aún no toca
 	if ( gpGlobals->curtime < m_iNextAmbientSpawn )
-		return false;
-
-	// Nos estamos quedando sin espacios ¡debemos parar!
-	if ( Utils::RunOutEntityLimit( MAX_ALIVE+DIRECTOR_SECURE_ENTITIES ) )
-		return false;
+		return false;	
 
 	// No hay lugares donde crear
 	if ( DirectorManager->m_hAmbientSpawnAreas.Count() <= 0 )
@@ -1363,9 +1494,9 @@ bool CDirector::CanSpawnAmbient()
 	return true;
 }
 
-//=========================================================
+//====================================================================
 // Procesa la creación de hijos de ambiente
-//=========================================================
+//====================================================================
 void CDirector::HandleAmbient()
 {
 	// No podemos crear más hijos ahora mismo
@@ -1373,15 +1504,46 @@ void CDirector::HandleAmbient()
 		return;
 
 	DirectorManager->StartSpawn( DIRECTOR_AMBIENT_CHILD );
-
-	m_iNextAmbientSpawn = gpGlobals->curtime + director_spawn_ambient_interval.GetInt();
+	m_iNextAmbientSpawn = gpGlobals->curtime + SPAWN_AMBIENT_INTERVAL;
 }
 
-//=========================================================
+//====================================================================
+// Reinicia el contador para un próximo Jefe
+//====================================================================
+void CDirector::RestartCountdownBoss()
+{
+	// Fácil: De 300 a 400 segundos
+	int i = RandomInt( 300, 400 );
+
+	switch ( InRules->GetSkillLevel() )
+	{
+		// Medio: 250 a 400 segundos
+		case SKILL_MEDIUM:
+			i = RandomInt( 250, 400 );
+		break;
+
+		// Dificil: 100 a 350 segundos
+		case SKILL_HARD:
+			i = RandomInt( 100, 350 );
+		break;
+	}
+
+	m_hLeft4Boss.Start( i );
+}
+
+//====================================================================
 // Devuelve si es posible crear un jefe
-//=========================================================
+//====================================================================
 bool CDirector::CanSpawnBoss()
 {
+	// Nos estamos quedando sin espacios ¡debemos parar!
+	if ( Utils::RunOutEntityLimit( MAX_ALIVE+DIRECTOR_SECURE_ENTITIES ) )
+		return false;
+
+	// El modo de Juego dice que no
+	if ( !GameMode()->CanSpawnBoss() )
+		return false;
+
 	// Limite de Jefes en el mapa
 	int iMaxBoss = ( m_iMaxBossAlive >= 0 ) ? m_iMaxBossAlive : MAX_BOSS_ALIVE;
 
@@ -1402,56 +1564,57 @@ bool CDirector::CanSpawnBoss()
 		return true;
 
 	// Evento de Climax ¡Quiero a los jugadores en pedacitos!
-	if ( Is(CLIMAX) )
+	if ( IsStatus(ST_FINALE) )
 		return true;
 
-	// No hace falta
-	if ( m_iAngry <= ANGRY_LOW )
+	// No ha pasado el tiempo necesario para un jefe
+	if ( !m_hLeft4Boss.IsElapsed() || !m_hLeft4Boss.HasStarted() )
 		return false;
 
-	// No ha pasado el tiempo necesario para un jefe
-	if ( !m_hLeft4Boss.IsElapsed() )
+	// No hace falta
+	// Ivan: El RandomInt es para que haya solo una pequeña probabilidad de que si haya. 1 / 101
+	if ( m_iAngry <= ANGRY_LOW && RandomInt(0, 100) != 1 )
 		return false;
 
 	// Un poco de suerte
-	if ( RandomInt(1, 100) > 90 )
+	if ( RandomInt(0, 100) > 50 )
 		return false;
 
 	return true;
 }
 
-//=========================================================
+//====================================================================
 // Procesa la creación de jefes
-//=========================================================
+//====================================================================
 void CDirector::HandleBoss()
 {
 	// Han eliminado al Jefe
-	if ( Is(BOSS) && m_iBossAlive <= 0 )
+	if ( IsStatus(ST_BOSS) && m_iBossAlive <= 0 )
 	{
 		// Fácil: Pasamos a Relajado
 		if ( InRules->IsSkillLevel(SKILL_EASY) )
 		{
-			Relaxed();
+			SetStatus( ST_NORMAL );
 		}
 
 		// Pasamos a Pánico
 		else
 		{
-			Panic();
+			SetStatus( ST_COMBAT );
 		}
 	}
 
 	// Es hora de crear un Jefe
 	if ( CanSpawnBoss() )
 	{
+		RestartCountdownBoss();
 		DirectorManager->StartSpawn( DIRECTOR_BOSS );
-		RestartBoss();
 	}
 }
 
-//=========================================================
+//====================================================================
 // Pone pendiente a un jefe
-//=========================================================
+//====================================================================
 void CDirector::TryBoss()
 {
 	if ( m_iBossSpawned > 0 )
@@ -1460,18 +1623,18 @@ void CDirector::TryBoss()
 	m_bBossPendient = true;
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si es posible crear un hijo especial
-//=========================================================
+//====================================================================
 bool CDirector::CanSpawnSpecial()
 {
 	// TODO
 	return false;
 }
 
-//=========================================================
+//====================================================================
 // Procesa la creación de jefes
-//=========================================================
+//====================================================================
 void CDirector::HandleSpecials()
 {
 	// No podemos
@@ -1481,24 +1644,16 @@ void CDirector::HandleSpecials()
 	// TODO
 }
 
-//=========================================================
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
+//====================================================================
 
-void CC_ForceRelax()
+void CC_ForceNormal()
 {
 	if ( !Director )
 		return;
 
-	Director->Relaxed();
-}
-
-void CC_ForcePanic()
-{
-	if ( !Director )
-		return;
-
-	Director->Panic( UTIL_GetCommandClient(), 60 );
+	Director->SetStatus( ST_NORMAL );
 }
 
 void CC_ForceBoss()
@@ -1506,15 +1661,23 @@ void CC_ForceBoss()
 	if ( !Director )
 		return;
 
-	Director->TryBoss();
+	Director->m_bBossPendient = true;
 }
 
-void CC_ForceClimax()
+void CC_ForceCombat()
 {
 	if ( !Director )
 		return;
 
-	Director->Climax();
+	Director->StartCombat( UTIL_GetCommandClient() );
+}
+
+void CC_ForceFinale()
+{
+	if ( !Director )
+		return;
+
+	Director->SetStatus( ST_FINALE );
 }
 
 void CC_ZSpawn()
@@ -1524,13 +1687,13 @@ void CC_ZSpawn()
 	if ( !pPlayer )
 		return;
 
+	director_spawn_outview.SetValue( 0 );
+
 	trace_t tr;
 	Vector forward;
 
 	AngleVectors( pPlayer->EyeAngles(), &forward );
-	UTIL_TraceLine(pPlayer->EyePosition(),
-		pPlayer->EyePosition() + forward * 300.0f, MASK_SOLID, 
-		pPlayer, COLLISION_GROUP_NONE, &tr );
+	UTIL_TraceLine( pPlayer->EyePosition(), pPlayer->EyePosition() + forward * 300.0f, MASK_SOLID, pPlayer, COLLISION_GROUP_NONE, &tr );
 
 	if ( tr.fraction != 0.0 )
 	{
@@ -1544,6 +1707,8 @@ void CC_ZSpawn()
 		
 		DirectorManager->SpawnChild( DIRECTOR_CHILD, tr.endpos );
 	}
+
+	director_spawn_outview.SetValue( 1 );
 }
 
 void CC_ZSpawnBatch()
@@ -1553,13 +1718,13 @@ void CC_ZSpawnBatch()
 	if ( !pPlayer )
 		return;
 
+	director_spawn_outview.SetValue( 0 );
+
 	trace_t tr;
 	Vector forward;
 
 	AngleVectors( pPlayer->EyeAngles(), &forward );
-	UTIL_TraceLine(pPlayer->EyePosition(),
-		pPlayer->EyePosition() + forward * 300.0f, MASK_SOLID, 
-		pPlayer, COLLISION_GROUP_NONE, &tr );
+	UTIL_TraceLine(pPlayer->EyePosition(), pPlayer->EyePosition() + forward * 300.0f, MASK_SOLID,  pPlayer, COLLISION_GROUP_NONE, &tr );
 
 	if ( tr.fraction != 0.0 )
 	{
@@ -1573,11 +1738,8 @@ void CC_ZSpawnBatch()
 		
 		DirectorManager->SpawnBatch( DIRECTOR_CHILD, tr.endpos );
 	}
-}
 
-void CC_ZSpawnRandom()
-{
-	DirectorManager->SpawnChild( DIRECTOR_CHILD );
+	director_spawn_outview.SetValue( 1 );
 }
 
 void CC_UpdateNodes()
@@ -1600,15 +1762,15 @@ void CC_DirectorKill()
 	DirectorManager->KillChilds();
 }
 
-static ConCommand director_force_relax("director_force_relax", CC_ForceRelax);
-static ConCommand director_force_panic("director_force_panic", CC_ForcePanic);
-static ConCommand director_force_boss("director_force_boss", CC_ForceBoss);
-static ConCommand director_force_climax("director_force_climax", CC_ForceClimax);
+static ConCommand director_force_normal( "director_force_normal", CC_ForceNormal );
+static ConCommand director_force_boss( "director_force_boss", CC_ForceBoss );
+static ConCommand director_force_combat( "director_force_combat", CC_ForceCombat );
+static ConCommand director_force_finale( "director_force_finale", CC_ForceFinale );
+
 static ConCommand director_update("director_update", CC_UpdateNodes, "Actualiza los nodos candidatos para crear hijos manualmente.");
 
 static ConCommand z_spawn("z_spawn", CC_ZSpawn);
 static ConCommand z_spawn_batch("z_spawn_batch", CC_ZSpawnBatch);
-static ConCommand z_spawn_random("z_spawn_random", CC_ZSpawnRandom);
 
 static ConCommand director_stop("director_stop", CC_DirectorStop);
 static ConCommand director_start("director_start", CC_DirectorStart);

@@ -1,4 +1,4 @@
-//==== InfoSmart. Todos los derechos reservados .===========//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 //
 // Inteligencia artificial encargada de la creación de enemigos (hijos)
 // además de poder controlar la música, el clima y otros aspectos
@@ -22,7 +22,7 @@
 #include "ai_basenpc.h"
 
 CAP_Director g_Director;
-CAP_Director* Director = &g_Director;
+CAP_Director *Director = &g_Director;
 
 //=========================================================
 // Comandos de consola
@@ -36,6 +36,20 @@ ConVar ap_director_cruel( "ap_director_cruel", "0", FCVAR_SERVER );
 
 #define IS_CRUEL ap_director_cruel.GetBool()
 
+BEGIN_SCRIPTDESC( CAP_Director, CDirector, SCRIPT_SINGLETON "El Director de Apocalypse" )
+
+	
+
+END_SCRIPTDESC();
+
+//=========================================================
+// Constructor
+//=========================================================
+void CAP_Director::LevelInitPreEntity()
+{
+	BaseClass::LevelInitPreEntity();
+}
+
 //=========================================================
 // Devuelve la distancia máxima de creación
 //=========================================================
@@ -43,15 +57,43 @@ float CAP_Director::MaxDistance()
 {
 	float flDistance = director_max_distance.GetFloat();
 
-	// Disminumos la distancia en una partida díficil, habrá más hijos juntos
+	// Disminumos la distancia
 	if ( InRules->IsSkillLevel(SKILL_HARD) )
-		flDistance -= 500;
+		flDistance -= 300;
 
 	// Apocalypse: Aumentamos la distancia
-	if ( Is(PANIC) || Is(CLIMAX) )
-		flDistance += 1500;
+	//if ( IsStatus(ST_COMBAT) || IsStatus(ST_FINALE) )
+		//flDistance += 1500;
 
 	return flDistance;
+}
+
+//=========================================================
+// Revela la última posición de los Jugadores al Hijo
+//=========================================================
+void CAP_Director::Disclose( CBaseEntity *pEntity )
+{
+	// No es un NPC
+	if ( !pEntity->IsNPC() )
+		return;
+
+	CAI_BaseNPC *pNPC = pEntity->MyNPCPointer();
+
+	// Ya tiene un enemigo
+	if ( pNPC->GetEnemy() )
+	{
+		pNPC->UpdateEnemyMemory( pNPC->GetEnemy(), pEntity->GetEnemy()->GetAbsOrigin() );
+		return;
+	}
+	
+	// Obtenemos un jugador al azar
+	CIN_Player *pPlayer = PlysManager->GetRandom();
+
+	// Este es perfecto
+	if ( pPlayer )
+	{
+		pNPC->UpdateEnemyMemory( pPlayer, pPlayer->GetAbsOrigin() );
+	}
 }
 
 //=========================================================
@@ -70,16 +112,23 @@ bool CAP_Director::IsMode( int iStatus )
 }
 
 //=========================================================
-// La Música de Enojo se ha reproducido
+// Establece el estado actual
 //=========================================================
-void CAP_Director::OnAngryMusicPlay()
+void CAP_Director::SetStatus( DirectorStatus iStatus )
 {
-	// Estamos muy enojados, aprovechemos la música de fondo y mandemos algunos infectados a atacar
-	if ( IsAngry(ANGRY_CRAZY) )
+	// Estamos saliendo del combate
+	if ( IsStatus(ST_COMBAT) && iStatus != ST_FINALE && iStatus != ST_COMBAT )
 	{
-		if ( RandomInt(0, 5) == 5 )
-			DirectorManager->Disclose();
+		EmitPlayerSound( PL_HURRAH );
 	}
+
+	// Estamos entrando en combate
+	else if ( iStatus == ST_COMBAT )
+	{
+		EmitPlayerSound( PL_INCOMING );
+	}
+
+	BaseClass::SetStatus( iStatus );
 }
 
 //=========================================================
@@ -87,27 +136,19 @@ void CAP_Director::OnAngryMusicPlay()
 //=========================================================
 int CAP_Director::MaxChilds()
 {
-	int iMax		= BaseClass::MaxChilds();
-	int iSanity		= PlysManager->GetAllSanity();
+	return BaseClass::MaxChilds();
+}
 
-	if ( iMax <= 0 )
-		return 0;
+//=========================================================
+// Verifica los hijos que siguen vivos
+//=========================================================
+void CAP_Director::CheckChilds()
+{
+	BaseClass::CheckChilds();
 
-	//
-	// Un evento de Pánico o Climax
-	//
-	if ( Is(PANIC) || Is(CLIMAX) )
-	{
-		// El numero de Infectados depende del nivel de cordura de los Jugadores
-		if ( iSanity >= 30 )
-		{
-			// Si los Jugadores tienen una cordura baja... que la suerte este con ellos.
-			int iToAdd = (int)( 1500 / iSanity );
-			iMax = iToAdd;
-		}
-	}
-
-	return iMax;
+	// Jugador: Atras, atras...
+	//if ( m_iCommonInDangerZone > 4 && m_iCommonVisibles > 4 )
+		//EmitPlayerSound( PL_BACKUP );
 }
 
 //=========================================================
@@ -116,57 +157,110 @@ int CAP_Director::MaxChilds()
 //=========================================================
 bool CAP_Director::CheckNewEnemy( CBaseEntity *pEntity )
 {
-	// No es un NPC
-	if ( !pEntity->IsNPC() )
-		return false;
+	// En Climax usamos el código original
+	if ( IsStatus(ST_FINALE) )
+		return BaseClass::CheckNewEnemy( pEntity );
 
-	CAI_BaseNPC *pNPC = pEntity->MyNPCPointer();
+	return false;
+}
 
-	// Solo en un evento de Pánico o Climax
-	if ( !Is(PANIC) && !Is(CLIMAX) )
-		return false;
+//=========================================================
+// [Evento] Hemos creado un hijo
+//=========================================================
+void CAP_Director::OnSpawnChild( CBaseEntity *pEntity )
+{
+	BaseClass::OnSpawnChild( pEntity );
 
-	// Ya tiene un enemigo
-	if ( pNPC->GetEnemy() )
+	// Solo podemos dar un enemigo si estamos en un evento de Pánico
+	if ( IsStatus(ST_COMBAT) )
 	{
-		// En Climax siempre deben conocer la ubicación del enemigo
-		if ( Is(CLIMAX) )
-		{
-			pNPC->UpdateEnemyMemory( pNPC->GetEnemy(), pNPC->GetEnemy()->GetAbsOrigin() );
-			return true;
-		}
-
-		return false;
+		Disclose( pEntity );
 	}
-
-	// Ya tiene una ruta
-	if ( pNPC->GetNavigator()->IsGoalSet() )
-		return false;
-
-	// ¿What?
-	if ( !m_vecPanicPosition.IsValid() )
-		return false;
-
-	AI_NavGoal_t goal( m_vecPanicPosition, ACT_RUN, AIN_HULL_TOLERANCE );
-	pNPC->GetNavigator()->SetGoal( goal );
-	
-	return true;
 }
 
 //=========================================================
 // Activa el estado de Pánico
 //=========================================================
-void CAP_Director::Panic( CBasePlayer *pCaller, int iSeconds, bool bInfinite )
+void CAP_Director::StartCombat( CBaseEntity *pActivator, int iWaves, bool bInfinite )
 {
-	BaseClass::Panic( pCaller, iSeconds, bInfinite );
+	BaseClass::StartCombat( pActivator, iWaves, bInfinite );
 
-	// No hay causante, seleccionamos uno al azar
-	if ( !pCaller )
-		pCaller = PlysManager->GetRandom( TeamGood() );
+	CBaseEntity *pChild = NULL;
 
-	// Establecemos la ubicación donde los infectados iran a investigar
-	if ( pCaller )
+	// Revelamos la posición a los Hijos vivos
+	do
 	{
-		m_vecPanicPosition = pCaller->GetAbsOrigin();
+		pChild = gEntList.FindEntityByName( pChild, "director_*" );
+
+		// No existe
+		if ( pChild == NULL )
+			continue;
+
+		// Esta muerto, no nos sirve
+		if ( !pChild->IsAlive() )
+			continue;
+
+		Disclose( pChild );
+
+	} while ( pChild );
+}
+
+//=========================================================
+// Selecciona un Jugador al azar para reproducir una oración
+//=========================================================
+void CAP_Director::EmitPlayerSound( PlayerSound pSound )
+{
+	if ( !InRules->IsMultiplayer() )
+		return;
+
+	int iLastTime = m_iLastPlayerSound[ pSound ];
+
+	// Ya hemos reproducido esta oración
+	if ( iLastTime > 0 )
+	{
+		// Hace menos de 10s
+		if ( gpGlobals->curtime <= iLastTime + 10 )
+			return;
 	}
+
+	CIN_Player *pPlayers[ 38 ];
+	int iPlayers = 0;
+
+	for ( int i = 1; i <= gpGlobals->maxClients; ++i )
+	{
+		CIN_Player *pPlayer = PlysManager->Get( i );
+
+		if ( !pPlayer )
+			continue;
+		
+		// No esta vivo
+		if ( !pPlayer->IsAlive() )
+			continue;
+
+		// Esta incapacitado
+		if ( pPlayer->IsIncap() )
+			continue;
+
+		// Agregamos el Jugador a la lista de los posibles
+		pPlayers[ iPlayers ] = pPlayer;
+		++iPlayers;
+	}
+
+	// No hubo nadie...
+	if ( iPlayers <= 0 )
+		return;
+
+	CIN_Player *pSoundPlayer;
+
+	// Seleccionamos un Jugador al azar
+	if ( iPlayers == 1 )
+		pSoundPlayer = pPlayers[ 0 ];
+	else
+		pSoundPlayer = pPlayers[ RandomInt(0, iPlayers-1) ];
+
+	// Reproducimos
+	pSoundPlayer->EmitPlayerSound( m_nPlayersSounds[pSound] );
+
+	// La última vez que he reproducido este sonido
+	m_iLastPlayerSound[ pSound ] = gpGlobals->curtime;
 }

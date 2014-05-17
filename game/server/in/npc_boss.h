@@ -5,19 +5,17 @@
 
 #pragma once
 
-#include "ai_basemelee_npc.h"
+#include "ai_base_infected.h"
 #include "in_shareddefs.h"
 
 //=========================================================
 // >> CBoss
 //=========================================================
-class CBoss : public CAI_BaseMeleeNPC
+class CBoss : public CBaseInfected
 {
 public:
-	DECLARE_CLASS( CBoss, CAI_BaseMeleeNPC );
+	DECLARE_CLASS( CBoss, CBaseInfected );
 	DECLARE_DATADESC();
-
-	virtual	bool AllowedToIgnite() { return true; }
 
 	virtual float GetMaxMassObject()
 	{
@@ -32,8 +30,9 @@ public:
 	// Principales
 	virtual void Spawn();
 	virtual void Precache();
-	virtual void Think();
+	virtual void NPCThink();
 
+	virtual void UpdateRealAttack();
 	virtual void UpdateStress();
 	virtual void UpdateEnemyChase();
 
@@ -50,10 +49,9 @@ public:
 	// Ataque
 	virtual bool CanAttack();
 	virtual void OnEnemyChanged( CBaseEntity *pOldEnemy, CBaseEntity *pNewEnemy );
-	
-	virtual CBaseEntity *AttackEntity( CBaseEntity *pEntity );
-	virtual CBaseEntity *AttackCharacter( CBaseCombatCharacter *pCharacter );
-	virtual void PushEntity( CBaseEntity *pEntity );
+
+	virtual void OnEntityAttacked( CBaseEntity *pVictim );
+	virtual void DismemberingEntity( CBaseEntity *pEntity );
 
 	virtual int GetMeleeDamage();
 	virtual int GetMeleeDistance();

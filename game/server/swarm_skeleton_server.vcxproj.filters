@@ -28,12 +28,6 @@
     <Filter Include="Tools Framework">
       <UniqueIdentifier>{77843216-956d-42f2-9b6e-33925fbfdd5e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\deferred\shared">
-      <UniqueIdentifier>{0be2cf97-8149-4d8c-a9bf-a5c56234c6a3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\deferred">
-      <UniqueIdentifier>{15202bde-9fd3-45af-ad4a-29cd6c36fca6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\InSource">
       <UniqueIdentifier>{84a962d6-4c9e-4756-aa11-c4460d232d2f}</UniqueIdentifier>
     </Filter>
@@ -63,6 +57,39 @@
     </Filter>
     <Filter Include="Source Files\Apocalypse\Shared">
       <UniqueIdentifier>{cab9debe-797d-47d1-b47f-3866e4ce0420}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Director\Gamemodes">
+      <UniqueIdentifier>{9bb3fff2-c1ff-4694-8088-6c62b2301a14}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Bots">
+      <UniqueIdentifier>{e5e038c0-fd8b-42da-ba5b-95f7cb3fc973}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Shared\Armas">
+      <UniqueIdentifier>{22f39d76-5270-4462-ad50-dddb60675d06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Utils">
+      <UniqueIdentifier>{672567c0-1ed0-46b0-9939-4a85a2faaa4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Director\Items">
+      <UniqueIdentifier>{fa4f552d-852d-41a8-bddc-f73ec3c781a0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Items">
+      <UniqueIdentifier>{850a514c-2732-498b-afcc-8938831db315}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Sound">
+      <UniqueIdentifier>{953cb905-dc12-4843-b467-7e9823cfa721}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Players">
+      <UniqueIdentifier>{35120f75-8e18-4a4f-8b4e-cdd6cfd737cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Shared\Players">
+      <UniqueIdentifier>{575c03a5-00f3-47c7-9e71-a9b0eda2fceb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Shared\Items">
+      <UniqueIdentifier>{a056c730-fd78-4b12-84ed-3f78d7f547bc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\NPC\Behavior">
+      <UniqueIdentifier>{31f24e45-dbba-47d7-9881-320ccbb57038}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1520,24 +1547,6 @@
     <ClCompile Include="..\shared\predicted_viewmodel.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\deferred\CDefLight.cpp">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="deferred\cdeferred_manager_server.cpp">
-      <Filter>Source Files\deferred</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\deferred\deferred_shared_common.cpp">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\deferred\CDefLightContainer.cpp">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\deferred\CDefLightGlobal.cpp">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClCompile>
-    <ClCompile Include="in\envmusic.cpp">
-      <Filter>Source Files\InSource</Filter>
-    </ClCompile>
     <ClCompile Include="in\in_client.cpp">
       <Filter>Source Files\InSource</Filter>
     </ClCompile>
@@ -1545,12 +1554,6 @@
       <Filter>Source Files\InSource</Filter>
     </ClCompile>
     <ClCompile Include="in\in_gameinterface.cpp">
-      <Filter>Source Files\InSource</Filter>
-    </ClCompile>
-    <ClCompile Include="in\in_player.cpp">
-      <Filter>Source Files\InSource</Filter>
-    </ClCompile>
-    <ClCompile Include="in\in_playermove.cpp">
       <Filter>Source Files\InSource</Filter>
     </ClCompile>
     <ClCompile Include="in\in_ragdoll.cpp">
@@ -1562,34 +1565,10 @@
     <ClCompile Include="in\nodes_generation.cpp">
       <Filter>Source Files\InSource</Filter>
     </ClCompile>
-    <ClCompile Include="in\players_manager.cpp">
-      <Filter>Source Files\InSource</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\in_ammodef.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\in\in_gamemovement.cpp">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\in\in_player_shared.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\in_playeranimstate.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
     <ClCompile Include="..\shared\in\in_team.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\in_weapon_parse.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\weapon_basemachinegun.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\weapon_inbase.cpp">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\weapons_macro.cpp">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\in\multiplayer_animstate.cpp">
@@ -1610,20 +1589,11 @@
     <ClCompile Include="in\director_music.cpp">
       <Filter>Source Files\InSource\Director</Filter>
     </ClCompile>
-    <ClCompile Include="in\director_gamemodes.cpp">
-      <Filter>Source Files\InSource\Director\Utils</Filter>
-    </ClCompile>
-    <ClCompile Include="in\director_status.cpp">
-      <Filter>Source Files\InSource\Director\Utils</Filter>
-    </ClCompile>
     <ClCompile Include="ap\ap_director_music.cpp">
       <Filter>Source Files\Apocalypse\Director</Filter>
     </ClCompile>
     <ClCompile Include="ap\ap_director.cpp">
       <Filter>Source Files\Apocalypse\Director</Filter>
-    </ClCompile>
-    <ClCompile Include="in\ai_basemelee_npc.cpp">
-      <Filter>Source Files\InSource\NPC</Filter>
     </ClCompile>
     <ClCompile Include="in\npc_chicken.cpp">
       <Filter>Source Files\InSource\NPC</Filter>
@@ -1654,6 +1624,75 @@
     </ClCompile>
     <ClCompile Include="..\shared\ap\ap_gamerules.cpp">
       <Filter>Source Files\Apocalypse\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="in\director_mode_normal.cpp">
+      <Filter>Source Files\InSource\Director\Gamemodes</Filter>
+    </ClCompile>
+    <ClCompile Include="in\in_bot.cpp">
+      <Filter>Source Files\InSource\Bots</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\in_ammodef.cpp">
+      <Filter>Source Files\InSource\Shared\Armas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\in_weapon_parse.cpp">
+      <Filter>Source Files\InSource\Shared\Armas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\weapon_basemachinegun.cpp">
+      <Filter>Source Files\InSource\Shared\Armas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\weapon_inbase.cpp">
+      <Filter>Source Files\InSource\Shared\Armas</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\weapons_macro.cpp">
+      <Filter>Source Files\InSource\Shared\Armas</Filter>
+    </ClCompile>
+    <ClCompile Include="in\roundrestart.cpp">
+      <Filter>Source Files\InSource\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\ap\ap_playeranimstate.cpp">
+      <Filter>Source Files\Apocalypse\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="in\behavior_melee_character.cpp">
+      <Filter>Source Files\InSource\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\layersound.cpp">
+      <Filter>Source Files\InSource\Shared</Filter>
+    </ClCompile>
+    <ClCompile Include="in\director_spawn.cpp">
+      <Filter>Source Files\InSource\Director\Utils</Filter>
+    </ClCompile>
+    <ClCompile Include="in\director_item_manager.cpp">
+      <Filter>Source Files\InSource\Director\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="in\envmusic.cpp">
+      <Filter>Source Files\InSource\Sound</Filter>
+    </ClCompile>
+    <ClCompile Include="in\in_player.cpp">
+      <Filter>Source Files\InSource\Players</Filter>
+    </ClCompile>
+    <ClCompile Include="in\in_playermove.cpp">
+      <Filter>Source Files\InSource\Players</Filter>
+    </ClCompile>
+    <ClCompile Include="in\players_manager.cpp">
+      <Filter>Source Files\InSource\Players</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\in_player_shared.cpp">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\in_playeranimstate.cpp">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\in_player_inventory.cpp">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\item_object.cpp">
+      <Filter>Source Files\InSource\Shared\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="in\ai_behavior_climb.cpp">
+      <Filter>Source Files\InSource\NPC\Behavior</Filter>
+    </ClCompile>
+    <ClCompile Include="in\ai_base_infected.cpp">
+      <Filter>Source Files\InSource\NPC</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -3295,30 +3334,6 @@
     <ClInclude Include="..\shared\predicted_viewmodel.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="deferred\deferred_server_common.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\deferred\CDefLight.h">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\deferred\deferred_shared_common.h">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="deferred\cdeferred_manager_server.h">
-      <Filter>Source Files\deferred</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\deferred\CDefLightContainer.h">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\deferred\CDefLightGlobal.h">
-      <Filter>Source Files\deferred\shared</Filter>
-    </ClInclude>
-    <ClInclude Include="in\envmusic.h">
-      <Filter>Source Files\InSource</Filter>
-    </ClInclude>
-    <ClInclude Include="in\in_player.h">
-      <Filter>Source Files\InSource</Filter>
-    </ClInclude>
     <ClInclude Include="in\in_ragdoll.h">
       <Filter>Source Files\InSource</Filter>
     </ClInclude>
@@ -3328,15 +3343,6 @@
     <ClInclude Include="in\nodes_generation.h">
       <Filter>Source Files\InSource</Filter>
     </ClInclude>
-    <ClInclude Include="in\players_manager.h">
-      <Filter>Source Files\InSource</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\in\in_ammodef.h">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\in\in_playeranimstate.h">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClInclude>
     <ClInclude Include="..\shared\in\in_shareddefs.h">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClInclude>
@@ -3344,15 +3350,6 @@
       <Filter>Source Files\InSource\Shared</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\in\in_viewvectors.h">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\in\in_weapon_parse.h">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\in\weapon_basemachinegun.h">
-      <Filter>Source Files\InSource\Shared</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\in\weapon_inbase.h">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\in\multiplayer_animstate.h">
@@ -3378,9 +3375,6 @@
     </ClInclude>
     <ClInclude Include="ap\ap_director.h">
       <Filter>Source Files\Apocalypse\Director</Filter>
-    </ClInclude>
-    <ClInclude Include="in\ai_basemelee_npc.h">
-      <Filter>Source Files\InSource\NPC</Filter>
     </ClInclude>
     <ClInclude Include="in\npc_survivor.h">
       <Filter>Source Files\InSource\NPC</Filter>
@@ -3411,6 +3405,66 @@
     </ClInclude>
     <ClInclude Include="..\shared\ap\ap_gamerules.h">
       <Filter>Source Files\Apocalypse\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="in\director_mode_normal.h">
+      <Filter>Source Files\InSource\Director\Gamemodes</Filter>
+    </ClInclude>
+    <ClInclude Include="in\in_bot.h">
+      <Filter>Source Files\InSource\Bots</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\in_ammodef.h">
+      <Filter>Source Files\InSource\Shared\Armas</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\in_weapon_parse.h">
+      <Filter>Source Files\InSource\Shared\Armas</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\weapon_basemachinegun.h">
+      <Filter>Source Files\InSource\Shared\Armas</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\weapon_inbase.h">
+      <Filter>Source Files\InSource\Shared\Armas</Filter>
+    </ClInclude>
+    <ClInclude Include="in\roundrestart.h">
+      <Filter>Source Files\InSource\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ap\ap_playeranimstate.h">
+      <Filter>Source Files\Apocalypse\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="in\behavior_melee_character.h">
+      <Filter>Source Files\InSource\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\layersound.h">
+      <Filter>Source Files\InSource\Shared</Filter>
+    </ClInclude>
+    <ClInclude Include="in\director_spawn.h">
+      <Filter>Source Files\InSource\Director\Utils</Filter>
+    </ClInclude>
+    <ClInclude Include="in\director_item_manager.h">
+      <Filter>Source Files\InSource\Director\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="in\envmusic.h">
+      <Filter>Source Files\InSource\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="in\in_player.h">
+      <Filter>Source Files\InSource\Players</Filter>
+    </ClInclude>
+    <ClInclude Include="in\players_manager.h">
+      <Filter>Source Files\InSource\Players</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\in_playeranimstate.h">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\in_player_inventory.h">
+      <Filter>Source Files\InSource\Shared\Players</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\item_object.h">
+      <Filter>Source Files\InSource\Shared\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="in\ai_behavior_climb.h">
+      <Filter>Source Files\InSource\NPC\Behavior</Filter>
+    </ClInclude>
+    <ClInclude Include="in\ai_base_infected.h">
+      <Filter>Source Files\InSource\NPC</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,4 @@
-//==== InfoSmart. Todos los derechos reservados .===========//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #ifndef DIRECTOR_MUSIC_H
 #define DIRECTOR_MUSIC_H
@@ -6,6 +6,7 @@
 #pragma once
 
 #include "envmusic.h"
+#include "layersound.h"
 
 //=========================================================
 // >> CDirector_Music
@@ -28,15 +29,15 @@ public:
 
 protected:
 
-	EnvMusic *m_nBossMusic;
-	EnvMusic *m_nClimaxMusic;
-	EnvMusic *m_nGameoverMusic;
+	CLayerSound *m_nBossMusic;
+	CLayerSound *m_nClimaxMusic;
+	CLayerSound *m_nGameoverMusic;
 
 	friend class CDirector;
 };
 
 #ifndef CUSTOM_DIRECTOR_MUSIC
-extern CDirectorMusic *DirectorMusic;
+	extern CDirectorMusic *DirectorMusic;
 #endif
 
 #endif // DIRECTOR_MUSIC_H

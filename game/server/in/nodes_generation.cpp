@@ -221,8 +221,15 @@ void CNodesGeneration::GenerateClimbNodes()
 			vecUp	+= 5;
 			vecDown += 5;
 
+			int iAngles = ( 90 * (int)( pLadder->GetDir() ) ) + 90;
+			QAngle qAngles( 0, iAngles, 0 );
+
 			Editor_CreateNode( "info_node_climb", g_pAINetworkManager->GetEditOps()->m_nNextWCIndex, vecUp.x, vecUp.y, vecUp.z, false );
 			Editor_CreateNode( "info_node_climb", g_pAINetworkManager->GetEditOps()->m_nNextWCIndex, vecDown.x, vecDown.y, vecDown.z, false );
+
+			// Rotamos hacia la dirección correcta
+			Editor_RotateEntity( "info_node_climb", vecUp.x, vecUp.y, vecUp.z, qAngles );
+			Editor_RotateEntity( "info_node_climb", vecDown.x, vecDown.y, vecDown.z, qAngles );
 			
 			// Creación completa
 			++iNodesInArea;

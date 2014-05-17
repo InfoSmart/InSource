@@ -15,6 +15,7 @@ public:
 	virtual void Precache();
 	virtual void Init();
 
+	virtual void OnNewMap();
 	virtual void Think();
 
 	virtual void Stop();
@@ -28,13 +29,13 @@ public:
 	virtual void UpdateAmbient();
 
 protected:
-	EnvMusic *m_nAngry;
-	EnvMusic *m_nSurprise;
-	EnvMusic *m_nTooClose;
-	EnvMusic *m_nTerror;
+	CLayerSound *m_nAngry;
+	CLayerSound *m_nSurprise;
+	CLayerSound *m_nTooClose;
+	CLayerSound *m_nTerror;
 
-	EnvMusic *m_nPanic;
-	EnvMusic *m_nPanicBackground;
+	//EnvMusic *m_nPanicDanger;
+	//EnvMusic *m_nPanicBackground;
 
 	CountdownTimer m_nNextAmbientMusic;
 	CountdownTimer m_nNextEffectsMusic;

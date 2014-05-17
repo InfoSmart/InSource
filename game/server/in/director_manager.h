@@ -1,4 +1,4 @@
-//==== InfoSmart. Todos los derechos reservados .===========//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #ifndef DIRECTOR_MANAGER_H
 #define DIRECTOR_MANAGER_H
@@ -11,6 +11,9 @@
 
 #include "in_shareddefs.h"
 #include "directordefs.h"
+
+#define BAN_DURATION_DEFAULT		20
+#define BAN_DURATION_UNREACHABLE	60
 
 //=========================================================
 // >> CDirectorManager
@@ -29,6 +32,7 @@ public:
 	virtual void Precache();
 
 	// Utilidades
+	virtual int GetCandidateCount();
 	virtual bool IsUsingNavMesh();
 
 	virtual void Disclose();
@@ -42,9 +46,19 @@ public:
 
 	virtual bool GetSpawnLocation( Vector *vecPosition, int iType = DIRECTOR_CHILD );
 
+	// Baneo
+	virtual void UnBan( CNavArea *pArea );
+	virtual void UnBan( const Vector vecPosition );
+
+	virtual void AddBan( CNavArea *pArea, float flDuration = BAN_DURATION_DEFAULT );
+	virtual void AddBan( const Vector vecPosition, float flDuration = BAN_DURATION_DEFAULT );
+
+	virtual void ClearBans();
+	virtual bool IsBanned( CNavArea *pArea );
+
 	// Verificación
 	virtual bool CanMake( const Vector &vecPosition );
-	virtual bool PostSpawn( CAI_BaseNPC *pNPC );
+	virtual bool PostSpawn( CBaseEntity *pEntity, Hull_t pHull = HULL_HUMAN );
 
 	// Creación
 	virtual const char *GetChildName( int iType );
@@ -57,6 +71,7 @@ public:
 	virtual void SpawnChild( int iType );
 
 	virtual void SpawnBatch( int iType, const Vector &vecPosition );
+	virtual void SpawnBatch( int iType, int iNumber );
 	virtual void SpawnBatch( int iType );
 
 	virtual bool MakeSpawn( const char *pClass, int iType, const Vector &vecPosition );
@@ -76,6 +91,7 @@ protected:
 	CUtlVector<CNavArea *> m_hAmbientSpawnAreas;
 
 	bool m_bSpawnInForceAreas;
+	int m_iBannedAreas[ MAX_NAV_AREAS ];
 
 	// Cronometros
 	CountdownTimer m_hCandidateUpdateTimer;

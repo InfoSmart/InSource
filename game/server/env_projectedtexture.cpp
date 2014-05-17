@@ -11,6 +11,14 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
+//====================================================================
+// Comandos
+//====================================================================
+
+//====================================================================
+// Información y Red
+//====================================================================
+
 LINK_ENTITY_TO_CLASS( env_projectedtexture, CEnvProjectedTexture );
 
 BEGIN_DATADESC( CEnvProjectedTexture )

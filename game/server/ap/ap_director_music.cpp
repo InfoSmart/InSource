@@ -11,8 +11,8 @@
 #include "players_manager.h"
 
 // Nuestro ayudante.
-CAP_DirectorMusic g_DirMusic;
-CAP_DirectorMusic *DirectorMusic = &g_DirMusic;
+CAP_DirectorMusic g_DirectorMusic;
+CAP_DirectorMusic *DirectorMusic = &g_DirectorMusic;
 
 //=========================================================
 // Comandos de consola
@@ -36,8 +36,8 @@ void CAP_DirectorMusic::Precache()
 
 	CBaseEntity::PrecacheScriptSound("Director.Ambient.Terror");
 
-	CBaseEntity::PrecacheScriptSound("Director.Panic.Escape");
-	CBaseEntity::PrecacheScriptSound("Director.Panic.Background");
+	CBaseEntity::PrecacheScriptSound("Director.Combat.Danger");
+	CBaseEntity::PrecacheScriptSound("Director.Combat.Background");
 }
 
 //=========================================================
@@ -46,14 +46,10 @@ void CAP_DirectorMusic::Precache()
 void CAP_DirectorMusic::Init()
 {
 	BaseClass::Init();
+	DirectorMusic = this;
 
-	m_nAngry	= new EnvMusic("Director.Angry.Low");
-	m_nSurprise	= new EnvMusic("Director.Ambient.Surprise");
-	m_nTooClose	= new EnvMusic("Director.Ambient.TooClose");
-	m_nTerror	= new EnvMusic("Director.Ambient.Terror");
-
-	m_nPanic			= new EnvMusic("Director.Panic.Escape");
-	m_nPanicBackground	= new EnvMusic("Director.Panic.Background");
+	//m_nPanicDanger		= new EnvMusic("Director.Combat.Danger");
+	//m_nPanicBackground	= new EnvMusic("Director.Combat.Background");
 
 	// Reproducimos música de ambiente en 15s
 	m_nNextAmbientMusic.Start( 15 );
@@ -64,14 +60,29 @@ void CAP_DirectorMusic::Init()
 
 //=========================================================
 //=========================================================
+void CAP_DirectorMusic::OnNewMap()
+{
+	BaseClass::OnNewMap();
+
+	m_nAngry	= CreateLayerSound( "Director.Angry.Low", LAYER_LOW );
+	m_nSurprise	= CreateLayerSound( "Director.Ambient.Surprise", LAYER_LOW );
+	m_nTooClose	= CreateLayerSound( "Director.Ambient.TooClose", LAYER_LOW );
+	m_nTerror	= CreateLayerSound( "Director.Ambient.Terror", LAYER_LOW );
+}
+
+//=========================================================
+//=========================================================
 void CAP_DirectorMusic::Think()
 {
 	BaseClass::Think();
 
-	m_nAngry->Update();
+	/*m_nAngry->Update();
 	m_nSurprise->Update();
 	m_nTooClose->Update();
-	m_nTerror->Update();
+	m_nTerror->Update();*/
+
+	//m_nPanicBackground->Update();
+	//m_nPanicDanger->Update();
 }
 
 //=========================================================
@@ -84,13 +95,13 @@ void CAP_DirectorMusic::Stop()
 	if ( !m_nAngry )
 		return;
 
-	m_nAngry->Fadeout();
-	m_nSurprise->Fadeout();
-	m_nTooClose->Fadeout();
-	m_nTerror->Fadeout();
+	m_nAngry->Stop();
+	m_nSurprise->Stop();
+	m_nTooClose->Stop();
+	m_nTerror->Stop();
 
-	m_nPanic->Fadeout();
-	m_nPanicBackground->Fadeout();
+	//m_nPanicDanger->Fadeout();
+	//m_nPanicBackground->Fadeout();
 }
 
 //=========================================================
@@ -100,13 +111,13 @@ void CAP_DirectorMusic::Shutdown()
 {
 	BaseClass::Shutdown();
 
-	delete m_nAngry;
-	delete m_nSurprise;
-	delete m_nTooClose;
-	delete m_nTerror;
+	UTIL_Remove( m_nAngry );
+	UTIL_Remove( m_nSurprise );
+	UTIL_Remove( m_nTooClose );
+	UTIL_Remove( m_nTerror );
 
-	delete m_nPanic;
-	delete m_nPanicBackground;
+	//delete m_nPanicDanger;
+	//delete m_nPanicBackground;
 }
 
 //=========================================================
@@ -145,42 +156,48 @@ void CAP_DirectorMusic::UpdateNormal()
 	//
 	// Estamos en un evento de pánico
 	//
-	if ( Director->Is(PANIC) || Director->Is(POST_PANIC) )
+	/*if ( Director->IsStatus(ST_COMBAT) )
 	{
-		// Reproducimos música de fondo
-		m_nPanicBackground->Play();
-
-		int iInDanger = Director->InDangerZone();
-
-		if ( iInDanger > 15 )
-			m_nPanicBackground->SetPitch( 110.0f );
-		else if ( iInDanger > 8 )
-			m_nPanicBackground->SetPitch( 105.0f );
-		else if ( iInDanger > 5 )
-			m_nPanicBackground->SetPitch( 100.0f );
-		else
-			m_nPanicBackground->SetPitch( 90.0f );
-
-		/*if ( !m_nPanic->IsPlaying() )
+		int iInDanger	= Director->InDangerZone();
+		float flVol		= 0.0f;
+		
+		if ( iInDanger > 8 )
 		{
-			// Sugerimos ¡¡correr!!
-			if ( PlysManager->GetStatus() <= STATS_MED )
-			{
-				m_nPanic->SetSoundName("Director.Panic.Escape");
-				m_nPanic->Play();
-			}
-			else
-			{
-				m_nPanic->SetSoundName("Director.Panic.Combat");
-				m_nPanic->Play();
-			}
-		}*/
+			flVol = 0.5f;
+		}
+		else if ( iInDanger > 5 )
+		{
+			flVol = 0.3f;
+		}
+		else if ( iInDanger > 3 )
+		{
+			flVol = 0.1f;
+		}
+
+		// Reproducimos música de fondo
+		// Entre más infectados tengamos cerca menor será su volumen
+		if ( !tmp_disable_music.GetBool() )
+		{
+			m_nPanicBackground->Play();
+			m_nPanicBackground->SetVolume( (1 - flVol) );
+		}
+
+		// Tenemos a varios infectados cerca, empezamos a reproducirlo
+		if ( flVol >= 0.1f )
+		{
+			m_nPanicDanger->Play();
+			m_nPanicDanger->SetVolume( flVol );
+		}
+		else
+		{
+			m_nPanicDanger->Fadeout();
+		}
 	}
 	else
 	{
-		m_nPanic->Fadeout();
+		m_nPanicDanger->Fadeout();
 		m_nPanicBackground->Fadeout();
-	}
+	}*/
 
 	UpdateAmbient();
 }
@@ -191,9 +208,9 @@ void CAP_DirectorMusic::UpdateNormal()
 void CAP_DirectorMusic::UpdateAmbient()
 {
 	//
-	// No estamos en Relajado ni Dormido, quitamos la música de fondo.
+	// No estamos en Normal, quitamos la música de fondo.
 	//
-	if ( !Director->Is(RELAXED) && !Director->Is(SLEEP) )
+	if ( !Director->IsStatus(ST_NORMAL) )
 	{
 		m_nAngry->Fadeout();
 		m_nSurprise->Fadeout();
@@ -238,7 +255,7 @@ void CAP_DirectorMusic::UpdateAmbient()
 	//
 	if ( m_nNextAmbientMusic.IsElapsed() )
 	{
-		if ( Director->Is(SLEEP) )
+		if ( Director->IsPhase(PH_RELAX) )
 		{
 			m_nAngry->SetSoundName("Director.Angry.Sleep");
 		}
@@ -265,10 +282,9 @@ void CAP_DirectorMusic::UpdateAmbient()
 		}
 
 		m_nAngry->Play();
-		Director->OnAngryMusicPlay();
 
 		// Reproducimos nuevamente...
 		int iDuration = m_nAngry->GetDuration();
-		m_nNextAmbientMusic.Start( RandomInt(iDuration+20, iDuration+60) );
+		m_nNextAmbientMusic.Start( RandomInt(iDuration+10, iDuration+30) );
 	}	
 }

@@ -94,7 +94,7 @@
 #include "npc_alyx_episodic.h"
 #endif
 
-
+#include "ilagcompensationmanager.h"
 
 #include "env_debughistory.h"
 #include "collisionutils.h"
@@ -680,6 +680,9 @@ void CAI_BaseNPC::Event_Killed( const CTakeDamageInfo &info )
 		// We're frozen; don't die.
 		return;
 	}
+
+	// Nos eliminamos de la compensación de Lag para evitar problemas
+	lagcompensation->RemoveAdditionalEntity( this );
 
 	Wake( false );
 	

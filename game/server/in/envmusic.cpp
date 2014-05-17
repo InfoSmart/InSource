@@ -18,7 +18,6 @@ extern ISoundEmitterSystemBase *soundemitterbase;
 //=========================================================
 EnvMusic::EnvMusic( const char *pName )
 {
-	// Establecemos el nombre del sonido y reiniciamos las variables
 	m_nSoundName		= pName;
 	m_flSoundDuration	= 0.0f;
 	m_bIsPlaying		= false;
@@ -44,7 +43,7 @@ EnvMusic::~EnvMusic()
 }
 
 //=========================================================
-// Inicializamos
+// Iniciamos la configuración del sonido
 //=========================================================
 bool EnvMusic::Init()
 {
@@ -56,70 +55,59 @@ bool EnvMusic::Init()
 	if ( !PlysManager->GetLocal() )
 		return false;
 
+	// Debemos crear nuevamente el sonido
 	if ( m_nPatch )
 	{
 		ENVELOPE_CONTROLLER.SoundDestroy( m_nPatch );
 		m_nPatch = NULL;
 	}
 
-	// TODO: Reproducir desde un origen/entidad pero solo a un equipo
-
 	// Obtenemos la duración
 	m_flSoundDuration = enginesound->GetSoundDuration( m_nParameters.soundname );
 
-	// Debemos reproducir la música desde una entidad
+	CRecipientFilter filter;
+
+	if ( m_iTeam != TEAM_ANY )
+	{
+		CTeamRecipientFilter filter( m_iTeam );
+	}
+	else
+	{
+		filter.AddAllPlayers();
+	}
+
+	// Debemos reproducir desde una entidad
 	if ( m_nFromEntity )
 	{
-		// Es un jugador, en este caso haremos algo especial
-		if ( m_nFromEntity->IsPlayer() )
+		// Proviene del Jugador pero nos indica que debe ser alrevez (Solo para el Jugador)
+		if ( m_nFromEntity->IsPlayer() && m_bOnlyTo )
 		{
 			CBasePlayer *pPlayer = ToBasePlayer( m_nFromEntity );
 
-			// Es música que debe ser escuchada por los demás jugadores pero no por el mismo
+			// No debe ser escuchada por el Jugador en cuestión
 			if ( m_bExceptPlayer )
 			{
-				CBroadcastRecipientFilter filter;
-				filter.MakeReliable();
 				filter.RemoveRecipient( pPlayer );
-
-				m_nPatch = ENVELOPE_CONTROLLER.SoundCreate( filter, pPlayer->entindex(), m_nParameters.channel, m_nParameters.soundname, m_nParameters.soundlevel );
 			}
 
 			// Solo el jugador podrá escuchar la música
 			else
 			{
-				CSingleUserRecipientFilter filter( pPlayer );
-				filter.MakeReliable();
-
-				m_nPatch = ENVELOPE_CONTROLLER.SoundCreate( filter, pPlayer->entindex(), m_nParameters.channel, m_nParameters.soundname, m_nParameters.soundlevel );
+				filter.RemoveAllRecipients();
+				filter.AddRecipient( pPlayer );
 			}
 		}
 
-		// Desde un NPC, objeto, entidad
+		// Desde la entidad
 		else
 		{
 			CPASAttenuationFilter filter( m_nFromEntity, m_nParameters.soundlevel );
-			filter.MakeReliable();
-
-			m_nPatch = ENVELOPE_CONTROLLER.SoundCreate( filter, m_nFromEntity->entindex(), m_nParameters.channel, m_nParameters.soundname, m_nParameters.soundlevel );
 		}
 	}
 
-	// Solo para un equipo
-	else if ( m_iTeam != TEAM_ANY )
-	{
-		CTeamRecipientFilter filter( m_iTeam, true );
-		filter.MakeReliable();
+	filter.MakeReliable();
 
-		m_nPatch = ENVELOPE_CONTROLLER.SoundCreate( filter, PlysManager->GetLocal()->entindex(), m_nParameters.channel, m_nParameters.soundname, m_nParameters.soundlevel );
-	}
-
-	// Para todos
-	else
-	{
-		CReliableBroadcastRecipientFilter filter;
-		m_nPatch = ENVELOPE_CONTROLLER.SoundCreate( filter, PlysManager->GetLocal()->entindex(), m_nParameters.channel, m_nParameters.soundname, m_nParameters.soundlevel );
-	}
+	m_nPatch = ENVELOPE_CONTROLLER.SoundCreate( filter, PlysManager->GetLocal()->entindex(), m_nParameters.channel, m_nParameters.soundname, m_nParameters.soundlevel );
 
 	// Ha ocurrido un problema
 	if ( !m_nPatch )
@@ -136,7 +124,7 @@ void EnvMusic::Update()
 	if ( IsPlaying() )
 	{
 		// El sonido ha acabado de reproducirse
-		if ( gpGlobals->curtime > m_flSoundFinish )
+		if ( gpGlobals->curtime >= (m_flSoundFinish-.5) )
 			m_bIsPlaying = false;
 	}
 }
@@ -301,6 +289,7 @@ void EnvMusic::SetTagSound( const char *pName )
 	m_nTagMusic = new EnvMusic( pName );
 	m_nTagMusic->SetFrom( m_nFromEntity );
 	m_nTagMusic->SetExceptPlayer( true );
+	m_nTagMusic->SetOnlyToTeam( m_iTeam );
 }
 
 //=========================================================
@@ -319,12 +308,13 @@ void EnvMusic::SetTagSound( EnvMusic *pMusic )
 //=========================================================
 // Establece de donde vendrá la música
 //=========================================================
-void EnvMusic::SetFrom( CBaseEntity *pEntity )
+void EnvMusic::SetFrom( CBaseEntity *pEntity, bool bOnlyTo )
 {
 	if ( !pEntity )
 		return;
 
-	m_nFromEntity = pEntity;
+	m_nFromEntity	= pEntity;
+	m_bOnlyTo		= bOnlyTo;
 }
 
 //=========================================================
