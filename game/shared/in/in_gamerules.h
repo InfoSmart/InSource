@@ -18,7 +18,6 @@
 	#define CInGameRulesProxy C_InGameRulesProxy
 #endif
 
-
 #ifdef APOCALYPSE
 	class CAPGameRules;
 	class CAP_SurvivalGameRules;
@@ -88,20 +87,33 @@ public:
 	virtual bool IsDeathmatch() { return false; }
 	virtual bool IsCoOp() { return false; }
 
-	virtual bool HasDirector() { return true; }		// ¿Usa al director?
-	virtual bool IsMultiplayer() { return false; }	// ¿Es una partida multijugador?
+	// ¿Usa al Director?
+	virtual bool HasDirector() 
+	{ 
+		return true; 
+	}
 
+	// ¿Es una partida Multijugador? (No Modo Historia)
+	virtual bool IsMultiplayer() 
+	{ 
+		return false; 
+	}
+
+	//
 	// Modo de Juego
+	//
 	virtual int GameMode() 
 	{ 
 		return GAME_MODE_NONE; 
 	}
-
 	virtual bool IsGameMode( int iMode ) 
 	{ 
 		return GameMode() == iMode; 
 	}
 
+	//
+	// Punteros especificos a Mods
+	//
 	#ifdef APOCALYPSE
 		virtual CAPGameRules *ApPointer() { return NULL; }
 		virtual CAP_SurvivalGameRules *ApSurvivalPointer() { return NULL; }
@@ -125,11 +137,15 @@ public:
 		return IsGameMode( GAME_MODE_COOP ); 
 	}
 
+	//
 	// Modo de Spawn
+	//
 	virtual int SpawnMode() { return SPAWN_MODE_RANDOM; }
 	virtual bool IsSpawnMode( int iMode ) { return SpawnMode() == iMode; }
 
+	//
 	// Vectores de vista
+	//
 	const CViewVectors* GetViewVectors() const;
 	const InViewVectors* GetInViewVectors() const;
 
@@ -139,10 +155,10 @@ public:
 	// Damage query implementations.
 	virtual bool	Damage_IsTimeBased( int iDmgType );			// Damage types that are time-based.
 	virtual bool	Damage_ShouldGibCorpse( int iDmgType );		// Damage types that gib the corpse.
-	virtual bool	Damage_ShowOnHUD( int iDmgType );				// Damage types that have client HUD art.
+	virtual bool	Damage_ShowOnHUD( int iDmgType );			// Damage types that have client HUD art.
 	virtual bool	Damage_NoPhysicsForce( int iDmgType );		// Damage types that don't have to supply a physics force & position.
-	virtual bool	Damage_ShouldNotBleed( int iDmgType );			// Damage types that don't make the player bleed.
-	// TEMP: These will go away once DamageTypes become enums.
+	virtual bool	Damage_ShouldNotBleed( int iDmgType );		// Damage types that don't make the player bleed.
+
 	virtual int		Damage_GetTimeBased( void );
 	virtual int		Damage_GetShouldGibCorpse( void );
 	virtual int		Damage_GetShowOnHud( void );
@@ -158,6 +174,8 @@ public:
 
 	virtual void Precache();
 	virtual void Think();
+
+	virtual void CleanUpMap();
 
 	virtual bool ClientConnected( edict_t *pEntity, const char *pszName, const char *pszAddress, char *reject, int maxrejectlen );
 	virtual bool ClientCommand( CBaseEntity *pEdict, const CCommand &args );
@@ -175,7 +193,8 @@ public:
 	virtual float FlPlayerFallDamage( CBasePlayer *pPlayer );
 	virtual bool AllowDamage( CBaseEntity *pVictim, const CTakeDamageInfo &info );
 	virtual bool FPlayerCanTakeDamage( CBasePlayer *pPlayer, CBaseEntity *pAttacker );
-	virtual bool FPlayerCanDejected( CBasePlayer *pPlayer );
+	virtual bool FPlayerCanDejected( CBasePlayer *pPlayer, const CTakeDamageInfo &info );
+	virtual bool FCanPlayDeathSound( const CTakeDamageInfo &info );
 
 	virtual void PlayerThink( CBasePlayer *pPlayer );
 	virtual void PlayerSpawn( CBasePlayer *pPlayer );
@@ -196,8 +215,13 @@ public:
 	virtual bool UseSuicidePenalty() { return true; }
 
 	virtual bool CanHavePlayerItem( CBasePlayer *pPlayer, CBaseCombatWeapon *pItem );
-	virtual bool CanHaveItem( CBasePlayer *pPlayer, CItem *pItem );
-	virtual void PlayerGotItem( CBasePlayer *pPlayer, CItem *pItem );
+
+	virtual bool CanHaveItem( CBasePlayer *pPlayer, CBaseEntity *pItem );
+	virtual void PlayerGotItem( CBasePlayer *pPlayer, CBaseEntity *pItem );
+
+	virtual bool CanHaveItem( CBasePlayer *pPlayer, CItem *pItem ) { return true; }
+	virtual void PlayerGotItem( CBasePlayer *pPlayer, CItem *pItem ) {  }
+
 	virtual void PlayerGotAmmo( CBaseCombatCharacter *pPlayer, char *szName, int iCount );
 
 	virtual int WeaponShouldRespawn( CBaseCombatWeapon *pWeapon );
@@ -212,6 +236,8 @@ public:
 
 	virtual float FlHealthChargerRechargeTime() { return 0.0f; }
 	virtual bool IsAllowedToSpawn( CBaseEntity *pEntity );
+
+	virtual CBaseCombatWeapon *GetNextBestWeapon( CBaseCombatCharacter *pPlayer, CBaseCombatWeapon *pCurrentWeapon );
 
 	virtual int DeadPlayerWeapons( CBasePlayer *pPlayer );
 	virtual int DeadPlayerAmmo( CBasePlayer *pPlayer );

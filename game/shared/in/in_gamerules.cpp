@@ -9,14 +9,17 @@
 #ifndef CLIENT_DLL
 
 	#include "team.h"
+
 	#include "in_player.h"
 	#include "director.h"
+	#include "players_manager.h"
 
 	#ifdef APOCALYPSE
 		#include "ap_director.h"
 	#endif
 
 	#include "iscorer.h"
+	#include "roundrestart.h"
 
 #endif
 
@@ -259,8 +262,8 @@ bool CInGameRules::ShouldCollide( int collisionGroup0, int collisionGroup1 )
 	if ( collisionGroup0 == COLLISION_GROUP_NOT_BETWEEN_THEM && collisionGroup1 == COLLISION_GROUP_NOT_BETWEEN_THEM )
 		return false;
 
-	if ( collisionGroup0 == COLLISION_GROUP_NOT_BETWEEN_THEM && collisionGroup1 == COLLISION_GROUP_NPC )
-		return false;
+	if ( collisionGroup0 == COLLISION_GROUP_NPC && collisionGroup1 == COLLISION_GROUP_NPC )
+		return true;
 	
 	return BaseClass::ShouldCollide( collisionGroup0, collisionGroup1 ); 
 }
@@ -321,6 +324,22 @@ void CInGameRules::Precache()
 void CInGameRules::Think()
 {
 	BaseClass::Think();
+}
+
+//=========================================================
+// Limpia el mapa y vuelve a crear todas las entidades
+//=========================================================
+void CInGameRules::CleanUpMap()
+{
+	// Se lo pasamos a su respectiva interfaz
+	roundRestart->CleanUpMap();
+
+	IGameEvent *pEvent = gameeventmanager->CreateEvent( "game_round_restart" );
+
+	if ( pEvent )
+	{
+		gameeventmanager->FireEvent( pEvent );
+	}
 }
 
 //=========================================================
@@ -640,9 +659,23 @@ bool CInGameRules::FPlayerCanTakeDamage( CBasePlayer *pPlayer, CBaseEntity *pAtt
 //=========================================================
 // Deuelve si el Jugador puede ser abatido
 //=========================================================
-bool CInGameRules::FPlayerCanDejected( CBasePlayer *pPlayer )
+bool CInGameRules::FPlayerCanDejected( CBasePlayer *pPlayer, const CTakeDamageInfo &info )
 {
 	if ( pPlayer->GetTeamNumber() == TEAM_INFECTED )
+		return false;
+
+	if ( info.GetDamageType() & (DMG_CRUSH|DMG_FALL|DMG_DISSOLVE) )
+		return false;
+
+	return true;
+}
+
+//=========================================================
+// Devuelve si el Jugador puede reproducir el sonido de muerte
+//=========================================================
+bool CInGameRules::FCanPlayDeathSound( const CTakeDamageInfo &info )
+{
+	if ( info.GetDamageType() & (DMG_CRUSH|DMG_FALL|DMG_DISSOLVE) )
 		return false;
 
 	return true;
@@ -747,8 +780,8 @@ bool CInGameRules::FPlayerCanRespawnNow( CBasePlayer *pPlayer )
 		return true;
 
 	// Ha pasado el tiempo suficiente
-	if ( gpGlobals->curtime > pPlayer->GetDeathTime() + wait_deathcam.GetFloat() )
-		return true;
+	//if ( gpGlobals->curtime > pPlayer->GetDeathTime() + wait_deathcam.GetFloat() )
+		//return true;
 
 	return false;
 }
@@ -913,7 +946,7 @@ bool CInGameRules::CanHavePlayerItem( CBasePlayer *pPlayer, CBaseCombatWeapon *p
 //=========================================================
 // Devuelve si el Jugador puede obtener el objeto
 //=========================================================
-bool CInGameRules::CanHaveItem( CBasePlayer *pPlayer, CItem *pItem )
+bool CInGameRules::CanHaveItem( CBasePlayer *pPlayer, CBaseEntity *pItem )
 {
 	if ( pPlayer->GetTeamNumber() == TEAM_INFECTED )
 		return false;
@@ -924,7 +957,7 @@ bool CInGameRules::CanHaveItem( CBasePlayer *pPlayer, CItem *pItem )
 //=========================================================
 // [Evento] El Jugador ha obtenido un objeto
 //=========================================================
-void CInGameRules::PlayerGotItem( CBasePlayer *pPlayer, CItem *pItem )
+void CInGameRules::PlayerGotItem( CBasePlayer *pPlayer, CBaseEntity *pItem )
 {
 }
 
@@ -956,6 +989,75 @@ int CInGameRules::ItemShouldRespawn( CItem *pItem )
 bool CInGameRules::IsAllowedToSpawn( CBaseEntity *pEntity )
 {
 	return true;
+}
+
+//=========================================================
+//=========================================================
+CBaseCombatWeapon *CInGameRules::GetNextBestWeapon( CBaseCombatCharacter *pPlayer, CBaseCombatWeapon *pCurrentWeapon )
+{
+	CBaseCombatWeapon *pCheck;
+		CBaseCombatWeapon *pBest;// this will be used in the event that we don't find a weapon in the same category.
+
+		int iCurrentWeight = -1;
+		int iBestWeight = -1;// no weapon lower than -1 can be autoswitched to
+		pBest = NULL;
+
+		// If I have a weapon, make sure I'm allowed to holster it
+		if ( pCurrentWeapon )
+		{
+			if ( !pCurrentWeapon->AllowsAutoSwitchFrom() || !pCurrentWeapon->CanHolster() )
+			{
+				// Either this weapon doesn't allow autoswitching away from it or I
+				// can't put this weapon away right now, so I can't switch.
+				return NULL;
+			}
+
+			iCurrentWeight = pCurrentWeapon->GetWeight();
+		}
+
+		for ( int i = 0 ; i < pPlayer->WeaponCount(); ++i )
+		{
+			pCheck = pPlayer->GetWeapon( i );
+			if ( !pCheck )
+				continue;
+
+			// If we have an active weapon and this weapon doesn't allow autoswitching away
+			// from another weapon, skip it.
+			if ( pCurrentWeapon && !pCheck->AllowsAutoSwitchTo() )
+				continue;
+
+			if ( pCheck->GetWeight() > -1 && pCheck->GetWeight() == iCurrentWeight && pCheck != pCurrentWeapon )
+			{
+				// this weapon is from the same category. 
+				if ( pCheck->HasAnyAmmo() )
+				{
+					if ( pPlayer->Weapon_CanSwitchTo( pCheck ) )
+					{
+						return pCheck;
+					}
+				}
+			}
+			else if ( pCheck->GetWeight() > iBestWeight && pCheck != pCurrentWeapon )// don't reselect the weapon we're trying to get rid of
+			{
+				//Msg( "Considering %s\n", STRING( pCheck->GetClassname() );
+				// we keep updating the 'best' weapon just in case we can't find a weapon of the same weight
+				// that the player was using. This will end up leaving the player with his heaviest-weighted 
+				// weapon. 
+				if ( pCheck->HasAnyAmmo() )
+				{
+					// if this weapon is useable, flag it as the best
+					iBestWeight = pCheck->GetWeight();
+					pBest = pCheck;
+				}
+			}
+		}
+
+		// if we make it here, we've checked all the weapons and found no useable 
+		// weapon in the same catagory as the current weapon. 
+		
+		// if pBest is null, we didn't find ANYTHING. Shouldn't be possible- should always 
+		// at least get the crowbar, but ya never know.
+		return pBest;
 }
 
 //=========================================================
@@ -1062,7 +1164,7 @@ bool CInGameRules::CanPlayDeathAnim( CBaseEntity *pEntity, const CTakeDamageInfo
 		{
 			// Esta incapacitado
 			// NOTE: Hasta que no tengamos animaciones propias
-			if ( pPlayer->IsDejected() )
+			if ( pPlayer->IsIncap() )
 				return false;
 		}
 	}

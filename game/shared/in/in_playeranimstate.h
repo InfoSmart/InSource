@@ -21,6 +21,10 @@
 #endif
 
 //==============================================
+// >> CInPlayerAnimState
+//
+// Administra y reproduce las animaciones de los
+// Jugadores en cliente y servidor
 //==============================================
 class CInPlayerAnimState : public CMultiPlayerAnimState
 {
@@ -30,23 +34,22 @@ public:
 	CInPlayerAnimState();
 	CInPlayerAnimState( CIN_Player *pPlayer, MultiPlayerMovementData_t &pMovementData );
 	
-	virtual Activity TranslateActivity(Activity actDesired);
+	virtual Activity TranslateActivity( Activity actDesired );
 
 	virtual void Update();
 	virtual Activity CalcMainActivity();
 
-	virtual void DoAnimationEvent(PlayerAnimEvent_t event, int nData = 0);
-	virtual void Teleport(const Vector *pNewOrigin, const QAngle *pNewAngles, CBasePlayer *pPlayer);
+	virtual void DoAnimationEvent( PlayerAnimEvent_t event, int nData = 0 );
+	virtual void Teleport( const Vector *pNewOrigin, const QAngle *pNewAngles, CBasePlayer *pPlayer );
 
-	bool	HandleSwimming(Activity &idealActivity);
-	bool	HandleMoving(Activity &idealActivity);
-	//bool	HandleJumping(Activity &idealActivity);
-	bool	HandleDucking(Activity &idealActivity);
-	//bool	HandleDying(Activity &idealActivity);
+	virtual bool HandleSwimming( Activity &idealActivity );
+	virtual bool HandleMoving( Activity &idealActivity );
+	virtual bool HandleDucking (Activity &idealActivity );
 
 	virtual void GrabEarAnimation();
+	CIN_Player *GetPlayer() { return m_nPlayer; }
 
-private:
+protected:
 	virtual bool SetupPoseParameters( CStudioHdr *pStudioHdr );
 	virtual void ComputePoseParam_AimPitch( CStudioHdr *pStudioHdr );
 	virtual void ComputePoseParam_AimYaw( CStudioHdr *pStudioHdr );

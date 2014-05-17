@@ -15,11 +15,11 @@
 	#define CBaseWeaponMachineGun C_BaseWeaponMachineGun
 #endif
 
-//==============================================
+//=========================================================
 // >> CBaseWeaponMachineGun
 //
 // Base para todas las metralletas.
-//==============================================
+//=========================================================
 class CBaseWeaponMachineGun : public CBaseInWeapon
 {
 public:
@@ -58,11 +58,11 @@ private:
 	CBaseWeaponMachineGun( const CBaseWeaponMachineGun & );
 };
 
-//==============================================
-// Macro para crear una metralleta sencilla.
-//==============================================
+//====================================================================
+// Macro para la creación de metralletas
+//====================================================================
 
-#define DEFINE_MACHINEGUN( _className, _entityName, _actBaseFrom, _weaponID ) \
+#define CREATE_MACHINEGUN( _className, _entityName, _actBaseFrom, _weaponID ) \
 	class C##_className : public CBaseWeaponMachineGun{ \
 	public: \
 		DECLARE_CLASS( C##_className, CBaseWeaponMachineGun ); \

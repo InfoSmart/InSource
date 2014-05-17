@@ -21,17 +21,16 @@ public:
 	virtual void Parse( ::KeyValues *pKeyValuesData, const char *szWeaponName );
 
 public:
-	int iDamage;
-	int flSpread;
-	float flSpeedWeight;
+	int m_iDamage;
+	float m_flSpread;
+	float m_flSpeedWeight;
 
-	float flMaxRange;
-	float flFireRate;
-	float flSecondaryFireRate;
+	float m_flMaxRange;
+	float m_flFireRate;
+	float m_flSecondaryFireRate;
 
-	float flViewKickDampen;
-	float flViewKickSlideLimit;
-	float flViewKickVertical;
+	float m_flViewKick;
+	int m_iClassification;
 
 	Vector m_vecIronsightPos;
 	QAngle m_angIronsightAng;

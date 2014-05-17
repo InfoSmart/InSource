@@ -45,6 +45,9 @@ public:
 	virtual void ConvertToInfected( CBasePlayer *pPlayer );
 	virtual void ConvertToHuman( CBasePlayer *pPlayer );
 
+	// Incapacitación
+	virtual bool FPlayerCanDejected( CBasePlayer *pPlayer, const CTakeDamageInfo &info );
+
 #endif
 };
 

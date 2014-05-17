@@ -10,22 +10,12 @@
 #include "in_playeranimstate.h"
 
 #ifndef CLIENT_DLL
-#include "nav.h"
+	#include "nav.h"
 #endif
 
-//==============================================
-// Configuración del Juego
-//==============================================
-
-#define GAME_CAN_SPRINT
-#define GAME_CAN_PRONE
-#define GAME_CAN_SHOOT_WHILE_SPRINTING
-#define GAME_CAN_SHOOT_ON_LADDERS
-#define GAME_CAN_SHOOT_WHILE_JUMPING
-
-//==============================================
+//====================================================================
 // Configuración
-//==============================================
+//====================================================================
 
 #ifdef APOCALYPSE
 	#define GAME_DESCRIPTION "Apocalypse-22"
@@ -42,6 +32,9 @@
 #define MAX_NAV_AREAS		9999
 #define MAX_NODES_PER_AREA	60
 
+//====================================================================
+// Estados de clasificación
+//====================================================================
 enum
 {
 	STATS_POOR = 1,
@@ -50,9 +43,9 @@ enum
 	STATS_PERFECT,
 };
 
-//==============================================
+//====================================================================
 // Navigation Mesh
-//==============================================
+//====================================================================
 #ifndef CLIENT_DLL
 
 enum
@@ -66,53 +59,44 @@ enum
 
 #endif
 
-//==============================================
+//====================================================================
 // Colisiones
-//==============================================
-
+//====================================================================
 enum
 {
 	COLLISION_GROUP_NOT_BETWEEN_THEM = LAST_SHARED_COLLISION_GROUP,
 	LAST_SHARED_IN_COLLISION_GROUP
 };
 
-//==============================================
+//====================================================================
 // Jugadores
-//==============================================
+//====================================================================
 
 #define FLASHLIGHT_DISTANCE			1000	// Distancia de la linterna
 #define FLASHLIGHT_OTHER_DISTANCE	300		// Distancia de la linterna de otro jugador
 
 // Velocidad para empezar la animación
-#define ANIM_WALK_SPEED				5.0f
+#define ANIM_WALK_SPEED				1.0f
 #define ANIM_RUN_SPEED				180.0f
 
 // Velocidad del jugador
-#define PLAYER_WALK_SPEED			160.0f
-#define PLAYER_RUN_SPEED			250.0f
+#define PLAYER_WALK_SPEED			150.0f
+#define PLAYER_RUN_SPEED			260.0f
 
-//==============================================
-// I.A.
-//==============================================
-
-#ifndef CLIENT_DLL
-
-#endif
-
-//==============================================
+//====================================================================
 // Equipos
-//==============================================
+//====================================================================
 
 static char *sTeamNames[] =
 {
 	"#Team_Unassigned",
 	"#Team_Spectator",
 
-#ifdef APOCALYPSE
-	"#Team_Humans",		// Humanos
-	"#Team_Soldiers",	// Soldados
-	"#Team_Infected"	// Infectados
-#endif
+	#ifdef APOCALYPSE
+		"#Team_Humans",		// Humanos
+		"#Team_Soldiers",	// Soldados
+		"#Team_Infected"	// Infectados
+	#endif
 };
 
 enum
@@ -120,31 +104,32 @@ enum
 	//TEAM_UNASSIGNED,
 	//TEAM_SPECTATOR
 
-#ifdef APOCALYPSE
-	TEAM_HUMANS = LAST_SHARED_TEAM + 1,
-	TEAM_SOLDIERS,
-	TEAM_INFECTED
-#endif
+	#ifdef APOCALYPSE
+		TEAM_HUMANS = LAST_SHARED_TEAM + 1,
+		TEAM_SOLDIERS,
+		TEAM_INFECTED
+	#endif
 };
 
-//==============================================
+//====================================================================
 // Modos de juego
-//==============================================
+//====================================================================
 enum
 {
 	GAME_MODE_NONE = 0,
 
-#ifdef APOCALYPSE
-	GAME_MODE_COOP,				// Coop
-	GAME_MODE_SURVIVAL,			// Survival
-	GAME_MODE_SURVIVAL_TIME,	// Survival Time
-#endif
+	#ifdef APOCALYPSE
+		GAME_MODE_COOP,				// Coop
+		GAME_MODE_SURVIVAL,			// Survival
+		GAME_MODE_SURVIVAL_TIME,	// Survival Time
+	#endif
+
+	LAST_GAME_MODE,
 };
 
-//==============================================
+//====================================================================
 // Tipos de Spawn
-//==============================================
-
+//====================================================================
 enum
 {
 	SPAWN_MODE_NONE = 0,
@@ -152,16 +137,16 @@ enum
 	SPAWN_MODE_UNIQUE		// Acomodar cada jugador en un Spawn
 };
 
-//==============================================
+//====================================================================
 // Tipos de daño
-//==============================================
+//====================================================================
+enum 
+{ 
+};
 
-enum { };
-
-//==============================================
+//====================================================================
 // Armas
-//==============================================
-
+//====================================================================
 enum
 {
 	WEAPON_NONE = 0,
@@ -175,6 +160,16 @@ enum
 	WEAPON_AK47,
 
 	IN_WEAPON_MAX
+};
+
+enum
+{
+	CLASS_NONE_WEAPON = 0,
+
+	CLASS_PRIMARY_WEAPON,
+	CLASS_SECONDARY_WEAPON,
+
+	IN_LAST_CLASS_WEAPON,
 };
 
 static const char *sWeaponAlias[] =
@@ -192,9 +187,9 @@ static const char *sWeaponAlias[] =
 	NULL
 };
 
-//==============================================
-// Animaciones
-//==============================================
+//====================================================================
+// Animación
+//====================================================================
 
 #define ANIM_MOVE_X		"move_x"
 #define ANIM_MOVE_Y		"move_y"
@@ -211,24 +206,5 @@ enum
 
 	IN_PLAYERANIMEVENT_COUNT
 };
-
-//=========================================================
-// Tabla de traducción de animaciones.
-//=========================================================
-
-/*static acttable_t unarmedActtable[] = 
-{
-	{ ACT_MP_STAND_IDLE,				ACT_HL2MP_IDLE,					false },	// Sin hacer nada
-	{ ACT_MP_WALK,						ACT_HL2MP_WALK,					false },	// Caminando
-	{ ACT_MP_RUN,						ACT_HL2MP_RUN,					false },	// Corriendo
-	{ ACT_MP_CROUCH_IDLE,				ACT_HL2MP_IDLE_CROUCH,			false },	// Agachado
-	{ ACT_MP_CROUCHWALK,				ACT_HL2MP_WALK_CROUCH,			false },	// Agachado y caminando
-	{ ACT_MP_JUMP,						ACT_HL2MP_JUMP_DUEL,			false },	// Saltando
-	{ ACT_MP_JUMP_START,				ACT_HL2MP_JUMP_DUEL,			false },	// Saltando
-	{ ACT_MP_SWIM,						ACT_HL2MP_SWIM,					false },	// Nadando
-	{ ACT_MP_SWIM_IDLE,					ACT_HL2MP_SWIM_IDLE,			false },	// Nadando sin hacer nada.
-	{ ACT_MP_AIRWALK,					ACT_HL2MP_SWIM_IDLE,			false },	// Flotando (NOCLIP)
-};*/
-
 
 #endif IN_SHAREDDEFS_H

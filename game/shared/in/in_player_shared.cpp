@@ -1,4 +1,4 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #include "cbase.h"
 #include "in_shareddefs.h"
@@ -28,7 +28,7 @@
 #endif // CLIENT_DLL
 
 #ifdef CLIENT_DLL
-static ConVar muzzleflash_dynamic_brigh( "cl_muzzleflash_dynamic_bright", "3.5", FCVAR_ARCHIVE, "" );
+static ConVar muzzleflash_dynamic_brigh( "cl_muzzleflash_dynamic_bright", "15.0", FCVAR_ARCHIVE, "" );
 static ConVar muzzleflash_dynamic_enabled( "cl_muzzleflash_dynamic_enabled", "1", FCVAR_ARCHIVE, "" );
 #endif
 
@@ -46,7 +46,6 @@ CBaseInWeapon *CIN_Player::GetActiveInWeapon() const
 void CIN_Player::OnFireBullets( int iBullets )
 {
 #ifdef CLIENT_DLL
-
 	// Encendemos un brillo
 	dlight_t *dl;
 	dl				= effects->CL_AllocDlight( entindex() );
@@ -55,29 +54,28 @@ void CIN_Player::OnFireBullets( int iBullets )
 	dl->color.g		= 142;
 	dl->color.b		= 65;
 	dl->radius		= RandomFloat( 500, 800 );
-	dl->die			= gpGlobals->curtime + RandomFloat(0.01, 0.05);
+	dl->die			= gpGlobals->curtime + 0.02f;
 
 	// Sin luz dinamica
 	if ( !muzzleflash_dynamic_enabled.GetBool() )
 		return;
 
-	// Primero debemos crear la luz
+	// Creamos una linterna que tenga el efecto de un MuzzleFlash
 	if ( !m_hFireEffect )
 	{
 		m_hFireEffect = new CFlashlightEffect( index );
+		m_hFireEffect->SetMuzzleFlashEnabled( true );
 		m_hFireEffect->Init();
 
-		m_hFireEffect->SetFOV( 100.0f );
-		m_hFireEffect->SetFar( 1600.0f );
+		m_hFireEffect->SetFar( 1300.0f );
 		m_hFireEffect->SetAlpha( 1.0f );
 	}
 
 	// Encendemos la luz dinamica
 	if ( m_hFireEffect )
 	{
-		// Configuración para simular un disparo
-		m_hFireEffect->SetBright( 100 );
-		m_hFireEffect->SetLinear( muzzleflash_dynamic_brigh.GetFloat() );
+		// Brillo para simular un disparo
+		m_hFireEffect->SetBright( muzzleflash_dynamic_brigh.GetFloat() );
 
 		// La encendemos
 		m_hFireEffect->TurnOff();
@@ -121,6 +119,9 @@ Activity CIN_Player::TranslateActivity( Activity actBase )
 		return pActivity;
 	}
 
+	//
+	// Humanos/Supervivientes
+	//
 	if ( GetTeamNumber() == TEAM_HUMANS )
 	{
 		switch ( actBase )
@@ -128,9 +129,6 @@ Activity CIN_Player::TranslateActivity( Activity actBase )
 			// Sin hacer nada
 			case ACT_MP_STAND_IDLE:
 			{
-				if ( IsDejected() )
-					return ACT_IDLE_INCAP_PISTOL;
-
 				return ACT_IDLE_SMG;
 				break;
 			}
@@ -193,6 +191,9 @@ Activity CIN_Player::TranslateActivity( Activity actBase )
 		}
 	}
 
+	//
+	// Infectados
+	//
 	if ( GetTeamNumber() == TEAM_INFECTED )
 	{
 		switch ( actBase )
@@ -228,7 +229,7 @@ Activity CIN_Player::TranslateActivity( Activity actBase )
 			// Agacharse
 			case ACT_MP_CROUCHWALK:
 			{
-				return ACT_TERROR_CRAWL_RUN;
+				return ACT_TERROR_CROUCH_RUN_INTENSE;
 				break;
 			}
 
@@ -250,6 +251,13 @@ Activity CIN_Player::TranslateActivity( Activity actBase )
 			case ACT_MP_ATTACK_STAND_PRIMARYFIRE:
 			{
 				return ACT_TERROR_ATTACK;
+				break;
+			}
+
+			// Cayendo
+			case ACT_FALL:
+			{
+				return ACT_TERROR_FALL;
 				break;
 			}
 		}

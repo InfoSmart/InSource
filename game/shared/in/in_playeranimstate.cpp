@@ -1,4 +1,4 @@
-//========= Copyright Valve Corporation, All rights reserved. ============//
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
 
 #include "cbase.h"
 #include "in_playeranimstate.h"
@@ -16,9 +16,9 @@
 	#include "in_player.h"
 #endif
 
-//=========================================================
-// Crea y configura un nuevo manejador de animaciones.
-//=========================================================
+//====================================================================
+// Crea y configura un nuevo manejador de animaciones
+//====================================================================
 CInPlayerAnimState *CreatePlayerAnimationState( CIN_Player *pPlayer )
 {
 	MDLCACHE_CRITICAL_SECTION();
@@ -33,9 +33,9 @@ CInPlayerAnimState *CreatePlayerAnimationState( CIN_Player *pPlayer )
 	return pAnim;
 }
 
-//=========================================================
+//====================================================================
 // Constructor
-//=========================================================
+//====================================================================
 CInPlayerAnimState::CInPlayerAnimState()
 {	
 }
@@ -44,9 +44,9 @@ CInPlayerAnimState::CInPlayerAnimState( CIN_Player *pPlayer, MultiPlayerMovement
 	m_nPlayer = pPlayer;
 }
 
-//=========================================================
+//====================================================================
 // Traduce una actividad a otra
-//=========================================================
+//====================================================================
 Activity CInPlayerAnimState::TranslateActivity( Activity actBase )
 {
 	return m_nPlayer->TranslateActivity( actBase );
@@ -73,14 +73,15 @@ void CInPlayerAnimState::Update()
 		return;
 
 	// No debemos actualizar la animación del Jugador
-	if ( m_nPlayer->IsEffectActive(EF_NODRAW) )
+	if ( !ShouldUpdateAnimState() )
 	{
 		ClearAnimationState();
 		return;
 	}
 
-	float eyeYaw	= m_nPlayer->EyeAngles()[YAW];
-	float eyePitch	= m_nPlayer->EyeAngles()[PITCH];
+	float eyeYaw		= m_nPlayer->EyeAngles()[YAW];
+	float eyePitch		= m_nPlayer->EyeAngles()[PITCH];
+	bool bComputePoses	= true;
 
 	// Guardamos los angulos de los ojos
 	m_flEyeYaw		= AngleNormalize(eyeYaw);
@@ -89,19 +90,26 @@ void CInPlayerAnimState::Update()
 	// Calculamos la animación actual
 	ComputeSequences( pStudioHdr );
 
+	// No hemos podido configurar los parametros de movimiento
+	if ( !SetupPoseParameters(pStudioHdr) )
+		bComputePoses = false;
+
+	// Esta muerto o incapacitado
+	if ( !GetPlayer()->IsAlive() || GetPlayer()->IsIncap() )
+		bComputePoses = false;
+
 	// Debemos calcular la dirección (voltearnos)
-	// TODO: Dejected -> Apocalypse
-	if ( SetupPoseParameters(pStudioHdr) && m_nPlayer->IsAlive() && !m_nPlayer->IsDejected() )
+	if ( bComputePoses )
 	{
 		// Calculamos la dirección hacia donde deben ir las piernas
 		ComputePoseParam_MoveYaw( pStudioHdr );
 
 		// Calculamos la dirección hacia donde debe moverse el torso (Arriba/Abajo)
 		ComputePoseParam_AimPitch( pStudioHdr );
-
-		// Calculamos la dirección hacia donde debe moverse el torso (Rotación)
-		ComputePoseParam_AimYaw( pStudioHdr );
 	}
+
+	// Calculamos la dirección hacia donde debe moverse el torso (Rotación)
+	ComputePoseParam_AimYaw( pStudioHdr );
 
 #ifdef CLIENT_DLL 
 	float flSeqSpeed = m_nPlayer->GetSequenceGroundSpeed( m_nPlayer->GetSequence() );
@@ -118,7 +126,7 @@ void CInPlayerAnimState::Update()
 }
 
 //====================================================================
-// Calcula la actividad actual.
+// Calcula la actividad actual
 //====================================================================
 Activity CInPlayerAnimState::CalcMainActivity()
 {
@@ -143,8 +151,9 @@ Activity CInPlayerAnimState::CalcMainActivity()
 }
 
 //====================================================================
+// Realiza una animación
 //====================================================================
-void CInPlayerAnimState::DoAnimationEvent(PlayerAnimEvent_t event, int nData)
+void CInPlayerAnimState::DoAnimationEvent( PlayerAnimEvent_t event, int nData )
 {
 	Activity iGestureActivity = ACT_INVALID;
 
@@ -350,7 +359,7 @@ void CInPlayerAnimState::GrabEarAnimation()
 //====================================================================
 // Inicializa los parametros de detección de animación.
 //====================================================================
-bool CInPlayerAnimState::SetupPoseParameters(CStudioHdr *pStudioHdr)
+bool CInPlayerAnimState::SetupPoseParameters( CStudioHdr *pStudioHdr )
 {
 	// Ya hemos inicializado esto.
 	if ( m_bPoseParameterInit )
@@ -454,7 +463,8 @@ void CInPlayerAnimState::ComputePoseParam_AimYaw(CStudioHdr *pStudioHdr)
 	}
 
 	// Rotate the body into position.
-	m_angRender[YAW] = m_flCurrentFeetYaw;
+	if ( !GetPlayer()->IsIncap() )
+		m_angRender[YAW] = m_flCurrentFeetYaw;
 
 	// Find the aim(torso) yaw base on the eye and feet yaws.
 	float flAimYaw = m_flEyeYaw - m_flCurrentFeetYaw;
@@ -469,9 +479,12 @@ void CInPlayerAnimState::ComputePoseParam_AimYaw(CStudioHdr *pStudioHdr)
 	m_bForceAimYaw = false;
 
 #ifndef CLIENT_DLL
-	QAngle angle = GetBasePlayer()->GetAbsAngles();
-	angle[YAW] = m_flCurrentFeetYaw;
+	if ( !GetPlayer()->IsIncap() )
+	{
+		QAngle angle = GetBasePlayer()->GetAbsAngles();
+		angle[YAW] = m_flCurrentFeetYaw;
 
-	GetBasePlayer()->SetAbsAngles( angle );
+		GetBasePlayer()->SetAbsAngles( angle );
+	}
 #endif
 }

@@ -434,17 +434,14 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 	CBaseInWeapon *pInWeapon	= dynamic_cast<CBaseInWeapon *>( pWeapon );
 
 	//Allow weapon lagging
-	if ( pInWeapon == NULL || !pInWeapon->IsIronsighted() )
+	if ( pInWeapon != NULL && !pInWeapon->IsIronsighted() )
 	{
-		if ( pInWeapon != NULL )
+		#if defined( CLIENT_DLL )
+		if ( !prediction->InPrediction() )
+		#endif
 		{
-			#if defined( CLIENT_DLL )
-			if ( !prediction->InPrediction() )
-			#endif
-			{
-				// add weapon-specific bob 
-				pWeapon->AddViewmodelBob( this, vmorigin, vmangles );
-			}
+			// add weapon-specific bob 
+			pWeapon->AddViewmodelBob( this, vmorigin, vmangles );
 		}
 
 		// Add model-specific bob even if no weapon associated (for head bob for off hand models)
@@ -462,7 +459,8 @@ void CBaseViewModel::CalcViewModelView( CBasePlayer *owner, const Vector& eyePos
 	#endif
 	}
 
-	CalcIronsights( vmorigin, vmangles );
+	if ( !owner->IsObserver() )
+		CalcIronsights( vmorigin, vmangles );
 
 	SetLocalOrigin( vmorigin );
 	SetLocalAngles( vmangles );

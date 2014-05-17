@@ -4737,7 +4737,7 @@ void CGameMovement::Duck( void )
 	//
 	// If the player is still alive and not an observer, check to make sure that
 	// his view height is at the standing height.
-	else if ( !IsDead() && !player->IsObserver() && !player->IsInAVehicle() )
+	/*else if ( !IsDead() && !player->IsObserver() && !player->IsInAVehicle() )
 	{
 		if ( ( player->m_Local.m_nDuckJumpTimeMsecs == 0 ) && ( fabs(player->GetViewOffset().z - GetPlayerViewOffset( false ).z) > 0.1 ) )
 		{
@@ -4747,7 +4747,7 @@ void CGameMovement::Duck( void )
 			// set the eye height to the non-ducked height
 			SetDuckedEyeOffset(0.0f);
 		}
-	}
+	}*/
 }
 
 static ConVar sv_optimizedmovement( "sv_optimizedmovement", "1", FCVAR_REPLICATED | FCVAR_DEVELOPMENTONLY );

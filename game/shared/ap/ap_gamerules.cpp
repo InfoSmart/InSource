@@ -77,11 +77,19 @@ void CAPGameRules::ConvertToHuman( CBasePlayer *pPlayer )
 	//UTIL_RemoveImmediate( pPlayer );
 
 	// Transformamos
-	CIN_Player *pNewPlayer = CIN_Player::CreatePlayer( "player", pEdict );
-	pNewPlayer->SetPlayerName( pPlayerName );
+	CIN_Player *pNewPlayer = CIN_Player::CreatePlayer( "player", pEdict, pPlayerName );
 
 	// Spawn
 	ClientActive( pEdict, false );
+}
+
+//=========================================================
+// Deuelve si el Jugador puede ser abatido
+//=========================================================
+bool CAPGameRules::FPlayerCanDejected( CBasePlayer *pPlayer, const CTakeDamageInfo &info )
+{
+	// No hay incapacitación en Apocalypse
+	return false;
 }
 
 #endif // CLIENT_DLL

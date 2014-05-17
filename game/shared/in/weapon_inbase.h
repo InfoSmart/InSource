@@ -24,9 +24,9 @@ extern ConVar weapon_automatic_reload;
 extern ConVar weapon_autofire;
 extern ConVar sk_plr_dmg_grenade;
 
-//==============================================
-// Macro
-//==============================================
+//====================================================================
+// Macros
+//====================================================================
 
 //{ ACT_MP_SWIM, ACT_HL2MP_SWIM_##_baseAct##, false }, \
 	//{ ACT_MP_SWIM_IDLE, ACT_HL2MP_SWIM_IDLE_##_baseAct##, false }, \
@@ -127,11 +127,11 @@ extern ConVar sk_plr_dmg_grenade;
 }; \
 	IMPLEMENT_ACTTABLE( _weaponClass );*/
 
-//==============================================
+//====================================================================
 // >> CBaseInWeapon
 //
 // Base para todas las armas.
-//==============================================
+//====================================================================
 class CBaseInWeapon : public CBaseCombatWeapon
 {
 public:
@@ -147,9 +147,14 @@ public:
 
 	bool IsPredicted() const;
 
-	virtual int GetWeaponID() const
+	virtual int GetWeaponID()
 	{
 		return WEAPON_NONE;
+	}
+
+	virtual int GetWeaponClass()
+	{
+		return GetInWpnData().m_iClassification;
 	}
 
 	virtual bool InReload()
@@ -159,9 +164,6 @@ public:
 
 	CIN_Player *GetPlayerOwner() const;
 	CInWeaponInfo const &GetInWpnData() const;
-	
-	//int AliasToWeaponID( const char *pAlias );
-	//const char *WeaponIDToAlias( int id );
 
 	virtual Vector ShootPosition();
 
@@ -171,6 +173,8 @@ public:
 
 	virtual bool Holster( CBaseCombatWeapon *pSwitchingTo = NULL );
 	virtual void Drop( const Vector &vecVelocity );
+
+	virtual void DefaultTouch( CBaseEntity *pOther );
 
 	// Disparo y Ataque
 	virtual bool CanPrimaryAttack();
@@ -191,6 +195,8 @@ public:
 	virtual Vector GetBulletsSpread();
 	virtual float GetFireSpread();
 
+	virtual float GetFireKick();
+
 	virtual void SetNextAttack( float flTime = 0.0 );
 	virtual void SetNextPrimaryAttack( float flTime = 0.0 );
 	virtual void SetNextSecondaryAttack( float flTime = 0.0 );
@@ -207,9 +213,6 @@ public:
 	virtual void EnableIronsight();
 	virtual void DisableIronsight();
 	virtual void SetIronsightTime();
-
-	// Utils
-	virtual void FallInit();
 
 	// Sonido
 	virtual void WeaponSound( WeaponSound_t pType, float flSoundTime = 0.0f );
@@ -234,9 +237,9 @@ private:
 	CBaseInWeapon( const CBaseInWeapon & );
 };
 
-//==============================================
+//====================================================================
 // Devuelve la ID del alias del arma
-//==============================================
+//====================================================================
 inline int AliasToWeaponID( const char *pAlias )
 {
 	if ( pAlias )
@@ -251,9 +254,9 @@ inline int AliasToWeaponID( const char *pAlias )
 	return WEAPON_NONE;
 }
 
-//==============================================
+//====================================================================
 // Devuelve el Alias de la ID del arma
-//==============================================
+//====================================================================
 inline const char *WeaponIDToAlias( int id )
 {
 	if ( id >= IN_WEAPON_MAX || id < 0 )

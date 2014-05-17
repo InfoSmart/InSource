@@ -48,7 +48,7 @@ public:
 // InRules->GetInViewVectors()->
 //=========================================================
 static InViewVectors g_InViewVectors(
-	Vector( 0, 0, 62 ),       // VEC_VIEW (m_vView) 
+	Vector( 0, 0, 68 ),       // VEC_VIEW (m_vView) 
 
 	Vector( -16, -16, 0 ),	  // VEC_HULL_MIN (m_vHullMin)
 	Vector( 16, 16, 62 ),	  // VEC_HULL_MAX (m_vHullMax)

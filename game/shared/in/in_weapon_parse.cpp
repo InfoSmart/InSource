@@ -17,15 +17,13 @@ FileWeaponInfo_t* CreateWeaponInfo()
 //==============================================
 CInWeaponInfo::CInWeaponInfo()
 {
-	iDamage				= 5;
-	flSpread			= 0.5f;
-	flFireRate			= 0.15f;
-	flSecondaryFireRate = 1.0f;
-	flMaxRange			= 4000.0f;
+	m_iDamage				= 5;
+	m_flSpread				= 0.5f;
+	m_flFireRate			= 0.15f;
+	m_flSecondaryFireRate	= 1.0f;
+	m_flMaxRange			= 4000.0f;
 
-	flViewKickDampen = 0.1;
-	flViewKickVertical = 13.0;
-	flViewKickSlideLimit = 5.0;
+	m_flViewKick = 0.1;
 }
 
 //==============================================
@@ -37,40 +35,28 @@ void CInWeaponInfo::Parse( KeyValues *pKeyValuesData, const char *szWeaponName )
 
 	// Daño
 	// Douglas Adams 1952 - 2001
-	iDamage	= pKeyValuesData->GetInt("Damage", 42);
+	m_iDamage	= pKeyValuesData->GetInt("Damage", 42);
 
 	// Disperción de balas
-	flSpread = pKeyValuesData->GetFloat( "BulletSpread", 0.5f );
+	m_flSpread = pKeyValuesData->GetFloat( "BulletSpread", 0.5f );
 
 	// Peso del arma
-	flSpeedWeight = pKeyValuesData->GetFloat( "SpeedWeight", 0.0f );
+	m_flSpeedWeight = pKeyValuesData->GetFloat( "SpeedWeight", 0.0f );
 
 	// Tiempo entre disparos. (Primario)
-	flFireRate = pKeyValuesData->GetFloat( "FireRate", 0.15f );
+	m_flFireRate = pKeyValuesData->GetFloat( "FireRate", 0.15f );
 
 	// Tiempo entre disparos. (Secundario)
-	flSecondaryFireRate = pKeyValuesData->GetFloat( "SecondaryFireRate", 1.0f );
+	m_flSecondaryFireRate = pKeyValuesData->GetFloat( "SecondaryFireRate", 1.0f );
 
 	// Máxima distancia de disparo.
-	flMaxRange = pKeyValuesData->GetFloat( "MaxRange", 4000.0f );
+	m_flMaxRange = pKeyValuesData->GetFloat( "MaxRange", 4000.0f );
 
-	//
 	// Retroceso
-	//
-	KeyValues *pKick = pKeyValuesData->FindKey( "ViewKick" );
+	m_flViewKick = pKeyValuesData->GetFloat( "ViewKick", 3.0f );
 
-	if ( pKick )
-	{
-		flViewKickDampen		= pKick->GetFloat( "Dampen", 0.1 );
-		flViewKickVertical		= pKick->GetFloat( "Vertical", 13.0 );
-		flViewKickSlideLimit	= pKick->GetFloat( "Slide", 5.0 );
-	}
-	else
-	{
-		flViewKickDampen		= 0.1;
-		flViewKickVertical		= 13.0;
-		flViewKickSlideLimit	= 5.0;
-	}
+	// Clasificación
+	m_iClassification = pKeyValuesData->GetInt( "WeaponClass", 0 );
 
 	//
 	// Vista de acero

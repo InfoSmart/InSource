@@ -36,17 +36,17 @@ BEGIN_PREDICTION_DATA( CBaseWeaponMachineGun )
 END_PREDICTION_DATA()
 #endif
 
-//==============================================
+//=========================================================
 // Constructor
-//==============================================
+//=========================================================
 CBaseWeaponMachineGun::CBaseWeaponMachineGun()
 {
 	iShotsFired = 0;
 }
 
-//==============================================
+//=========================================================
 // Bucle de ejecución de tareas.
-//==============================================
+//=========================================================
 void CBaseWeaponMachineGun::ItemPostFrame()
 {
 	CIN_Player *pPlayer = ToInPlayer( GetOwner( ) );
@@ -61,19 +61,18 @@ void CBaseWeaponMachineGun::ItemPostFrame()
 		iShotsFired = 0;
 }
 
-//==============================================
+//=========================================================
 // Devuelve si el arma puede efectuar un disparo primario.
 // ¡Solo llamar desde PrimaryAttack()!
-//==============================================
+//=========================================================
 bool CBaseWeaponMachineGun::CanPrimaryAttack()
 {
-	bool bResult = BaseClass::CanPrimaryAttack();
-	return bResult;
+	return BaseClass::CanPrimaryAttack();
 }
 
-//==============================================
-// El jugador desea disparar.
-//==============================================
+//=========================================================
+// El jugador desea disparar
+//=========================================================
 void CBaseWeaponMachineGun::PrimaryAttack()
 {
 	// 
@@ -93,9 +92,9 @@ void CBaseWeaponMachineGun::PrimaryAttack()
 	}
 }
 
-//==============================================
-// El jugador desea disparar la munición secundaria.
-//==============================================
+//=========================================================
+// El jugador desea disparar la munición secundaria
+//=========================================================
 void CBaseWeaponMachineGun::SecondaryAttack()
 {
 	// ¡Una granada!
@@ -108,9 +107,9 @@ void CBaseWeaponMachineGun::SecondaryAttack()
 	SetNextIdleTime( 1.0 );
 }
 
-//==============================================
-// Devuelve la animación para el ataque primario.
-//==============================================
+//=========================================================
+// Devuelve la animación para el ataque primario
+//=========================================================
 Activity CBaseWeaponMachineGun::GetPrimaryAttackActivity()
 {
 	if ( iShotsFired <= 2 )
@@ -125,18 +124,18 @@ Activity CBaseWeaponMachineGun::GetPrimaryAttackActivity()
 	return ACT_VM_RECOIL3;
 }
 
-//==============================================
+//=========================================================
 // Despliega el arma.
-//==============================================
+//=========================================================
 bool CBaseWeaponMachineGun::Deploy()
 {
 	iShotsFired = 0;
 	return BaseClass::Deploy();
 }
 
-//==============================================
-// Informa al arma que el jugador desea recargar.
-//==============================================
+//=========================================================
+// Informa al arma que el jugador desea recargar
+//=========================================================
 bool CBaseWeaponMachineGun::Reload()
 {
 	CIN_Player *pPlayer = GetPlayerOwner();
@@ -169,8 +168,8 @@ bool CBaseWeaponMachineGun::Reload()
 	return true;
 }
 
-//==============================================
-//==============================================
+//=========================================================
+//=========================================================
 void CBaseWeaponMachineGun::AddViewKick()
 {
 	CIN_Player *pPlayer = GetPlayerOwner();
@@ -179,43 +178,12 @@ void CBaseWeaponMachineGun::AddViewKick()
 	if ( !pPlayer )
 		return;
 
-	QAngle vecScratch;
-	int iSeed = GetPredictionRandomSeed( ) & 255;
+	float flPunch = GetFireKick();
+	QAngle anglePunch;
 
-	//float flDampen		= GetInWpnData().flViewKickDampen;
-	float flVertical	= GetInWpnData().flViewKickVertical;
-	float flSlideLimit	= GetInWpnData().flViewKickSlideLimit;
+	anglePunch.x = -flPunch;
+	anglePunch.y = RandomFloat(0.1, 0.5);
+	anglePunch.z = RandomFloat(0.1, 0.5);
 
-	// Find how far into our accuracy degradation we are
-	float duration = (m_fFireDuration > flSlideLimit) ? flSlideLimit : m_fFireDuration;
-	float kickPerc = duration / flSlideLimit;
-
-	// do this to get a hard discontinuity, clear out anything under 10 degrees punch
-	pPlayer->ViewPunchReset( 10 );
-
-	// Apply this to the view angles as well
-	vecScratch.x = -(KICK_MIN_X + (flVertical * kickPerc));
-	vecScratch.y = -(KICK_MIN_Y + (flVertical * kickPerc)) / 3;
-	vecScratch.z = KICK_MIN_Z + (flVertical * kickPerc) / 8;
-
-	RandomSeed( iSeed );
-
-	// Wibble left and right
-	if ( RandomInt( -1, 1 ) >= 0 )
-		vecScratch.y *= -1;
-
-	++iSeed;
-
-	// Wobble up and down
-	if ( RandomInt( -1, 1 ) >= 0 )
-		vecScratch.z *= -1;
-
-#ifndef CLIENT_DLL
-	//Clip this to our desired min/max
-	UTIL_ClipPunchAngleOffset( vecScratch, pPlayer->m_Local.m_vecPunchAngle, QAngle( 24.0f, 3.0f, 1.0f ) );
-#endif
-
-	// Add it to the view punch
-	// NOTE: 0.5 is just tuned to match the old effect before the punch became simulated
-	pPlayer->ViewPunch( vecScratch * 0.5 );
+	pPlayer->ViewPunch( anglePunch );
 }
