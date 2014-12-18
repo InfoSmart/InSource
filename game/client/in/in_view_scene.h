@@ -20,15 +20,11 @@
 class CInViewRender : public CViewRender
 {
 public:
+	DECLARE_CLASS( CInViewRender, CViewRender );
 	CInViewRender();
 
 	virtual void OnRenderStart();
-	virtual void Render2DEffectsPreHUD( const CViewSetup &view );
-
-	virtual bool AllowScreenspaceFade() { return false; }
-
-private:
-	void DoMotionBlur( const CViewSetup &view );
+	virtual bool AllowScreenspaceFade() { return true; }
 };
 
 #endif //ASW_VIEW_SCENE_H

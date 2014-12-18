@@ -12,14 +12,15 @@
 #include "c_basetempentity.h"
 
 #include "beamdraw.h"
+#include "beam_shared.h"
 #include "flashlighteffect.h"
 
 #include "in_shareddefs.h"
 #include "in_player_inventory.h"
 
-//=========================================================
-// >> C_IN_Player
-//=========================================================
+//====================================================================
+// Clase base para todos los Jugadores
+//====================================================================
 class C_IN_Player : public C_BasePlayer
 {
 public:
@@ -31,15 +32,8 @@ public:
 	C_IN_Player();
 	~C_IN_Player();
 
-	virtual bool IsInGround()
-	{
-		return (GetFlags() & FL_ONGROUND) ? true : false;
-	}
-
-	virtual bool IsGod() 
-	{ 
-		return (GetFlags() & FL_GODMODE) ? true : false; 
-	}
+	virtual bool IsInGround() { return (GetFlags() & FL_ONGROUND) != 0; }
+	virtual bool IsGod() { return (GetFlags() & FL_GODMODE) != 0; }
 
 	static C_IN_Player* GetLocalInPlayer();
 
@@ -51,6 +45,7 @@ public:
 
 	// Utils
 	virtual void CreateAnimationState();
+	virtual CInPlayerAnimState *GetAnimation() { return m_nAnimation; }
 
 	virtual bool IsPressingButton( int iButton );
 	virtual bool IsButtonPressed( int iButton );
@@ -68,21 +63,24 @@ public:
 
 	virtual bool GetEntityEyesView( C_BaseAnimating *pEntity, Vector& eyeOrigin, QAngle& eyeAngles, int secureDistance = 10000 );
 	virtual void CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& fov );
-	virtual void InitializePoseParams();
 
 	virtual void DoPostProcessingEffects( PostProcessParameters_t &params );
 
 	// Animaciones y Modelos
+	virtual void UpdateLookAt();
 	virtual CStudioHdr *OnNewModel();
 
 	virtual bool ShouldDrawLocalPlayer();
 	virtual bool ShouldDraw();
 
 	virtual void DoAnimationEvent( PlayerAnimEvent_t event, int nData = 0 );
-	virtual C_BaseAnimating *BecomeRagdollOnClient( );
+	virtual C_BaseAnimating *BecomeRagdollOnClient();
 	virtual IRagdoll* C_IN_Player::GetRepresentativeRagdoll() const;
 
 	virtual Activity TranslateActivity( Activity actBase );
+
+	virtual void InitializePoseParams();
+	virtual void UpdatePoseParams() { }
 
 	// Iluminación
 	virtual ShadowType_t ShadowCastType();
@@ -92,7 +90,9 @@ public:
 	virtual void UpdateFlashlight();
 	virtual void ReleaseFlashlight();
 
-	virtual void GetFlashlightPosition( C_IN_Player *pPlayer, Vector &vecForward, Vector &vecRight, Vector &vecUp );
+	virtual void UpdateIncapHeadLight();
+
+	virtual void GetFlashlightPosition( C_IN_Player *pPlayer, Vector &vecPosition, Vector &vecForward, Vector &vecRight, Vector &vecUp, const char *pWeaponAttach = "flashlight" );
 	virtual const char *GetFlashlightTextureName() const;
 	virtual float GetFlashlightFOV() const;
 	virtual float GetFlashlightFarZ();
@@ -121,7 +121,7 @@ public:
 	virtual bool CreateMove( float flInputSampleTime, CUserCmd *pCmd );
 	
 protected:
-	CInPlayerAnimState *m_nAnimState;
+	CInPlayerAnimState *m_nAnimation;
 	EHANDLE	m_nRagdoll;
 	EHANDLE m_nPlayerInventory;
 
@@ -145,20 +145,12 @@ protected:
 	// Linternas
 	CFlashlightEffect *m_nFlashlight;
 	CFlashlightEffect *m_nThirdFlashlight;
-	CFlashlightEffect *m_hFireEffect;
+	CFlashlightEffect *m_nHeadLight;
 
 	Beam_t *m_nFlashlightBeam;
 
 	// Poses
-	int iHeadYawPoseParam;
-	int	iHeadPitchPoseParam;
-	float flHeadYawMin;
-	float flHeadYawMax;
-	float flHeadPitchMin;
-	float flHeadPitchMax;
-	float flLastBodyYaw;
-	float flCurrentHeadYaw;
-	float flCurrentHeadPitch;
+	CountdownTimer m_nBlinkTimer;
 
 	friend class CInPlayerAnimState;
 

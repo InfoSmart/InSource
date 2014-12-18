@@ -29,7 +29,7 @@ public:
 
 	virtual int GetHudHiddenBits();
 
-	virtual bool CanPaint();
+	virtual bool ShouldPaint();
 
 protected:
 	Awesomium::JSObject m_pGameHUDObject;

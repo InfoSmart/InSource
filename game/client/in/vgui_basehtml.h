@@ -17,24 +17,34 @@ class CBaseHTML : public VAwesomium
 public:
 	DECLARE_CLASS_SIMPLE( CBaseHTML, VAwesomium );
 
-	CBaseHTML( vgui::Panel *parent, const char *name, const char *htmlFile );
-	CBaseHTML( vgui::VPANEL parent, const char *name, const char *htmlFile );
+	CBaseHTML( vgui::Panel *parent, const char *htmlFile );
+	CBaseHTML( vgui::VPANEL parent, const char *htmlFile );
 
 	virtual void Init( const char *htmlFile );
-	virtual void Think();
+	virtual void SetSize( int wide,int tall );
+	virtual void OnThink();
+
+	virtual void SetProperty( const char *pKeyname, Awesomium::JSValue pValue, Awesomium::JSObject pObject );
 	virtual void WebThink();
 
-	virtual bool CanPaint() { return true; }
+	virtual bool ShouldPaint();
 	virtual void Paint();
 	virtual void PaintBackground();
 
 	virtual void OnDocumentReady( Awesomium::WebView* caller, const Awesomium::WebURL& url );
 	virtual void OnMethodCall( Awesomium::WebView* caller, unsigned int remote_object_id, const Awesomium::WebString& method_name, const Awesomium::JSArray& args );
+	virtual Awesomium::JSValue OnMethodCallWithReturnValue( Awesomium::WebView* caller, unsigned int remote_object_id, const Awesomium::WebString& method_name, const Awesomium::JSArray& args );
 
 protected:
 	Awesomium::JSObject m_pGameObject;
+	Awesomium::JSObject m_pSteamObject;
+	Awesomium::JSObject m_pPlayerObject;
+
 	const char *m_pSteamID;
 	float m_flNextThink;
+
+	int m_iWidth;
+	int m_iHeight;
 };
 
 #endif

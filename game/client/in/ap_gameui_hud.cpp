@@ -11,6 +11,9 @@
 #include "iclientmode.h"
 #include "c_in_player.h"
 
+#include "c_ap_player.h"
+#include "item_object.h"
+
 using namespace vgui;
 using namespace Awesomium;
 
@@ -44,6 +47,17 @@ void CAP_GameHUD::WebThink()
 	// Actualizamos el inventario
 	UpdateInventory();
 
+	// Obtenemos al Jugador
+	C_AP_Player *pPlayer = dynamic_cast<C_AP_Player *>( C_BasePlayer::GetLocalPlayer() );
+
+	if ( pPlayer )
+	{
+		// Actualizamos la información
+		m_pGameObject.SetProperty( WSLit("playerBlood"), JSValue(pPlayer->GetBloodLevel()) );
+		m_pGameObject.SetProperty( WSLit("playerHungry"), JSValue(pPlayer->GetHungryLevel()) );
+		m_pGameObject.SetProperty( WSLit("playerThirst"), JSValue(pPlayer->GetThirstLevel()) );
+	}
+
 	BaseClass::WebThink();
 }
 
@@ -65,7 +79,7 @@ void CAP_GameHUD::UpdateInventory()
 	// Por cada slot en el inventario
 	for ( int i = 0; i < MAX_INVENTORY_ITEMS; i++ )
 	{
-		CBaseEntity *pItem = pPlayer->GetInventory()->GetItem( i );
+		CItemObject *pItem = dynamic_cast<CItemObject*>( pPlayer->GetInventory()->GetItem(i) );
 
 		if ( !pItem )
 		{
@@ -73,7 +87,7 @@ void CAP_GameHUD::UpdateInventory()
 			continue;
 		}
 
-		ExecuteJavaScript( VarArgs("HUD.Inventory.addItem(%i, '%s')", i, pItem->GetClassname()), "");
+		ExecuteJavaScript( VarArgs("HUD.Inventory.addItem(%i, '%s')", i, pItem->ObjectName()), "");
 		++iItemsCount;
 	}
 
@@ -92,8 +106,14 @@ void CAP_GameHUD::OnDocumentReady( Awesomium::WebView* caller, const Awesomium::
 {
 	BaseClass::OnDocumentReady( caller, url );
 
+	// Creamos los métodos 
 	m_pGameHUDObject.SetCustomMethod( WSLit("dropItem"), false );
 	m_pGameHUDObject.SetCustomMethod( WSLit("useItem"), false );
+
+	// Variables
+	m_pGameObject.SetProperty( WSLit("playerBlood"), JSValue(0) );
+	m_pGameObject.SetProperty( WSLit("playerHungry"), JSValue(0) );
+	m_pGameObject.SetProperty( WSLit("playerThirst"), JSValue(0) );
 }
 
 //====================================================================

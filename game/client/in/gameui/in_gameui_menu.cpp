@@ -3,7 +3,6 @@
 #include "cbase.h"
 #include "in_gameui_menu.h"
 
-//#include "GameUI/IGameUI.h"
 #include "gameui_interface.h"
 #include "steam/steam_api.h"
 
@@ -14,7 +13,7 @@
 //====================================================================
 // Constructor
 //====================================================================
-CGameUIPanelWeb::CGameUIPanelWeb( vgui::VPANEL parent ) : BaseClass( parent, "HTML Screen", HTML_FILE )
+CGameUIPanelWeb::CGameUIPanelWeb( vgui::VPANEL parent ) : BaseClass( parent, HTML_FILE )
 {
 	MakePopup( false );
 	m_bIsPaused = false;
@@ -22,12 +21,20 @@ CGameUIPanelWeb::CGameUIPanelWeb( vgui::VPANEL parent ) : BaseClass( parent, "HT
 
 //====================================================================
 //====================================================================
-bool CGameUIPanelWeb::CanPaint()
+bool CGameUIPanelWeb::ShouldPaint()
 {
 	if ( engine->IsInGame() && !m_bIsPaused )
 		return false;
 
-	return true;
+	return BaseClass::ShouldPaint();
+}
+
+//====================================================================
+//====================================================================
+void CGameUIPanelWeb::Paint()
+{
+	//CBaseHTML::SetSize( ScreenWidth(), ScreenHeight() );
+	BaseClass::Paint();
 }
 
 //====================================================================

@@ -122,7 +122,7 @@ bool CVGuiSystemModuleLoader::InitializeAllModules(CreateInterfaceFn *factorylis
 		m_Modules[i].moduleInterface->SetParent(GetGameUIBasePanel());
 #else
 		//m_Modules[i].moduleInterface->SetParent( g_pMainPanel->GetVPanel() );	
-		m_Modules[i].moduleInterface->SetParent( GameUI().GetWebPanel()->GetVPanel() );
+		m_Modules[i].moduleInterface->SetParent( GameUI().GetGameUI()->GetVPanel() );
 #endif
 	}
 

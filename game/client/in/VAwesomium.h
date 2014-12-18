@@ -2,7 +2,6 @@
 
 #include <vgui/VGUI.h>
 #include <vgui_controls/Panel.h>
-
 #include <vgui/ISurface.h>
 
 #include <Awesomium/WebCore.h>
@@ -21,8 +20,11 @@ class VAwesomium : public vgui::Panel, public Awesomium::JSMethodHandler, public
 	DECLARE_CLASS_SIMPLE(VAwesomium, vgui::Panel);
 
 public:
-	VAwesomium(vgui::Panel *parent, const char *panelName);
+	VAwesomium(vgui::Panel *parent);
 	~VAwesomium();
+
+	virtual void Init();
+
 	void OpenURL(const char *address);
 	void ExecuteJavaScript(const char *script, const char *frame_xpath);
 	Awesomium::WebView* GetWebView(void);
@@ -35,8 +37,11 @@ public:
 	virtual void OnFinishLoadingFrame(Awesomium::WebView* caller, int64 frame_id, bool is_main_frame, const Awesomium::WebURL& url){};
 	virtual void OnDocumentReady(Awesomium::WebView* caller, const Awesomium::WebURL& url){};
 
+	virtual void ThreadPaint();
+
 protected:
 	virtual void PerformLayout(void);
+	virtual bool ShouldUpdatePaint() { return true; }
 	virtual void Paint(void);
 	virtual void Think(void);
 	virtual void OnMousePressed(vgui::MouseCode code);
@@ -51,7 +56,7 @@ protected:
 public:
 	static int m_iNumberOfViews;
 
-protected:
+public:
 	void MouseButtonHelper(vgui::MouseCode code, bool isUp);
 	void KeyboardButtonHelper(vgui::KeyCode code, bool isUp);
 	void DrawBrowserView(void);

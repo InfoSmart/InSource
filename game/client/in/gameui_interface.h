@@ -13,6 +13,7 @@
 #include "convar.h"
 
 #include "in_gameui_menu.h"
+#include "in_gameui_hud.h"
 
 class IGameClientExports;
 class CCommand;
@@ -28,6 +29,7 @@ public:
 	~CGameUI();
 
 	virtual void Initialize( CreateInterfaceFn factory );
+	virtual void CreateGameUI();
 	virtual void PostInit();
 	virtual void Connect( CreateInterfaceFn gameFactory );
 
@@ -74,7 +76,7 @@ public:
 	virtual void SendConnectedToGameMessage();
 	virtual void ValidateCDKey() { };
 
-	virtual CGameUIPanelWeb *GetWebPanel() { return m_nWebPanelUI; }
+	virtual CGameUIPanelWeb *GetGameUI() { return m_nWebPanelUI; }
 
 public:
 	bool m_bActivatedUI : 1;
@@ -84,12 +86,14 @@ public:
 
 	int m_iPlayGameStartupSound;
 	int m_iFriendsLoadPauseFrames;
+
 	int m_iGameIP;
 	int m_iGameConnectionPort;
 	int m_iGameQueryPort;
 
 	CreateInterfaceFn m_GameFactory;
 	CGameUIPanelWeb *m_nWebPanelUI;
+	CGameHUDWeb *m_nWebPanelHUD;
 
 	char m_szPlatformDir[MAX_PATH];
 };

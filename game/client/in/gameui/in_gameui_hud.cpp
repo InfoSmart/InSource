@@ -20,11 +20,11 @@ CGameHUDWeb *HUDWeb = NULL;
 //====================================================================
 // Constructor
 //====================================================================
-CGameHUDWeb::CGameHUDWeb( vgui::Panel *parent ) : BaseClass( parent, "HUD Screen", HTML_FILE )
+CGameHUDWeb::CGameHUDWeb( vgui::Panel *parent ) : BaseClass( parent, HTML_FILE )
 {
 	Init();
 }
-CGameHUDWeb::CGameHUDWeb( vgui::VPANEL parent ) : BaseClass( parent, "HUD Screen", HTML_FILE )
+CGameHUDWeb::CGameHUDWeb( vgui::VPANEL parent ) : BaseClass( parent, HTML_FILE )
 {
 	Init();
 }
@@ -109,13 +109,13 @@ void CGameHUDWeb::OnMethodCall( Awesomium::WebView* pCaller, unsigned int pObjec
 void CGameHUDWeb::WebThink()
 {
 	// Variables
-	m_pGameHUDObject.SetProperty( WSLit("hiddenBits"), JSValue(GetHudHiddenBits()) );
+	//m_pGameHUDObject.SetProperty( WSLit("hiddenBits"), JSValue(GetHudHiddenBits()) );
 
 	//
-	UpdateWeaponSelection();
+	//UpdateWeaponSelection();
 
 	// Think
-	ExecuteJavaScript( "HudThink()", "" );
+	//ExecuteJavaScript( "HudThink()", "" );
 
 	BaseClass::WebThink();
 }
@@ -175,7 +175,7 @@ int CGameHUDWeb::GetHudHiddenBits()
 
 //====================================================================
 //====================================================================
-bool CGameHUDWeb::CanPaint()
+bool CGameHUDWeb::ShouldPaint()
 {
 	if ( !engine->IsInGame() )
 		return false;
@@ -203,11 +203,12 @@ bool CGameHUDWeb::CanPaint()
 	if ( iHideHud & HIDEHUD_ALL )
 		return false;
 
-	return true;
+	return BaseClass::ShouldPaint();
 }
 
 //=============================================================================================================================
 
+/*
 inline void __CmdFunc_InSlot1()
 {
 	HUDWeb->ExecuteJavaScript( "HUD.WeaponSelection.selectWeapon(1)", "" );
@@ -237,3 +238,4 @@ HOOK_COMMAND( in_slot2, InSlot2 );
 HOOK_COMMAND( in_invnext, InNextWeapon );
 HOOK_COMMAND( in_invprev, InPrevWeapon );
 HOOK_COMMAND( in_lastinv, InLastWeapon );
+*/

@@ -36,15 +36,16 @@ static ConVar playermodel_view( "cl_playermodel_view", "0", FCVAR_CHEAT, "" );
 
 static ConVar firstperson_ragdoll( "cl_firstperson_ragdoll", "0", FCVAR_CHEAT, "" );
 
+static ConVar flashlight( "cl_flashlight_dev_error", "1" );
 static ConVar flashlight_fov( "cl_flashlight_fov", "50.0", FCVAR_CHEAT );
 static ConVar flashlight_far( "cl_flashlight_far", "750.0", FCVAR_CHEAT );
-static ConVar flashlight_linear( "cl_flashlight_linear", "100.0", FCVAR_CHEAT );
+static ConVar flashlight_linear( "cl_flashlight_linear", "250.0", FCVAR_CHEAT );
 
 static ConVar flashlightbeam_haloscale( "cl_flashlightbeam_haloscale", "3.0" );
-static ConVar flashlightbeam_endwidth( "cl_flashlightbeam_endwidth", "35.0" );
+static ConVar flashlightbeam_endwidth( "cl_flashlightbeam_endwidth", "10.0" );
 static ConVar flashlightbeam_fadelength( "cl_flashlightbeam_fadelength", "300.0" );
-static ConVar flashlightbeam_brightness( "cl_flashlightbeam_brightness", "60.0" );
-static ConVar flashlightbeam_segments( "cl_flashlightbeam_segments", "8" );
+static ConVar flashlightbeam_brightness( "cl_flashlightbeam_brightness", "20.0" );
+static ConVar flashlightbeam_segments( "cl_flashlightbeam_segments", "10" );
 
 #define PLAYERMODEL_VIEW	playermodel_view.GetBool()
 #define PLAYERMODEL			playermodel.GetString()
@@ -66,22 +67,21 @@ END_RECV_TABLE( )
 // DT_InLocalPlayerExclusive
 BEGIN_RECV_TABLE_NOBASE( C_IN_Player, DT_InLocalPlayerExclusive )
 	RecvPropVector( RECVINFO_NAME( m_vecNetworkOrigin, m_vecOrigin ) ),
-	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
 	RecvPropEHandle( RECVINFO( m_nRagdoll ) ),
 END_RECV_TABLE()
 
 // DT_InNonLocalPlayerExclusive
 BEGIN_RECV_TABLE_NOBASE( C_IN_Player, DT_InNonLocalPlayerExclusive )
 	RecvPropVector( RECVINFO_NAME( m_vecNetworkOrigin, m_vecOrigin ) ),
-
-	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
-	RecvPropFloat( RECVINFO( m_angEyeAngles[1] ) ),
 END_RECV_TABLE()
 
 // DT_INPlayer
 IMPLEMENT_CLIENTCLASS_DT( C_IN_Player, DT_InPlayer, CIN_Player )
 	RecvPropDataTable( "inlocaldata", 0, 0, &REFERENCE_RECV_TABLE( DT_InLocalPlayerExclusive ) ),
 	RecvPropDataTable( "innonlocaldata", 0, 0, &REFERENCE_RECV_TABLE( DT_InNonLocalPlayerExclusive ) ),	
+
+	RecvPropFloat( RECVINFO( m_angEyeAngles[0] ) ),
+	RecvPropFloat( RECVINFO( m_angEyeAngles[1] ) ),
 
 	RecvPropBool( RECVINFO(m_bInCombat) ),
 	RecvPropBool( RECVINFO(m_bMovementDisabled) ),
@@ -106,30 +106,33 @@ BEGIN_PREDICTION_DATA( C_IN_Player )
 	DEFINE_PRED_FIELD( m_nResetEventsParity, FIELD_INTEGER, FTYPEDESC_OVERRIDE | FTYPEDESC_PRIVATE | FTYPEDESC_NOERRORCHECK ),
 END_PREDICTION_DATA()
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 C_IN_Player::C_IN_Player() : iv_angEyeAngles( "C_IN_Player::iv_angEyeAngles" )
 {
 	// Iniciamos la variable
 	m_angEyeAngles.Init();
 	AddVar( &m_angEyeAngles, &iv_angEyeAngles, LATCH_SIMULATION_VAR );
+
+	// Invalidamos el cronometro para el parpadeo
+	m_nBlinkTimer.Invalidate();
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 C_IN_Player::~C_IN_Player( )
 {
 	ReleaseFlashlight();
 
-	if ( m_nAnimState )
-		m_nAnimState->Release();
+	if ( GetAnimation() )
+		GetAnimation()->Release();
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 C_IN_Player* C_IN_Player::GetLocalInPlayer()
 {
-	return ToInPlayer( C_BasePlayer::GetLocalPlayer( ) );
+	return ToInPlayer( C_BasePlayer::GetLocalPlayer() );
 }
 
 //====================================================================
@@ -139,34 +142,15 @@ void C_IN_Player::Spawn()
 	BaseClass::Spawn();
 
 	// Creamos el procesador de animaciones
-	if ( !m_nAnimState )
+	if ( !GetAnimation() )
 		CreateAnimationState();
-
-	// Evitamos el recorte de luces
-	ConVarRef scissor( "r_flashlightscissor" );
-	scissor.SetValue( "0" );
-
-	// TODO: Ubicar el origen
-	ConVarRef cam_idealpitch( "cam_idealpitch" );
-	cam_idealpitch.SetValue( 0 );
-	ConVarRef cam_idealdist( "cam_idealdist" );
-	cam_idealdist.SetValue( 100 );
-
-	// Pasamos a primera persona
-	// TODO: ¿Aquí va esto?
-	if ( C_BasePlayer::IsLocalPlayer(this) )
-		input->CAM_ToFirstPerson();
-
-	// Evitamos el Crosshair
-	//ConVarRef crosshair("crosshair");
-	//crosshair.SetValue( "0" );
 }
 
-//=========================================================
-//=========================================================
+//====================================================================
+//====================================================================
 void C_IN_Player::PreThink()
 {
-	QAngle vTempAngles = GetLocalAngles( );
+	QAngle vTempAngles = GetLocalAngles();
 
 	if ( GetLocalPlayer() == this )
 		vTempAngles[PITCH] = EyeAngles()[PITCH];
@@ -176,29 +160,29 @@ void C_IN_Player::PreThink()
 	if ( vTempAngles[YAW] < 0.0f )
 		vTempAngles[YAW] += 360.0f;
 
-	// Actualizamos el efecto de disparo
-	if ( m_hFireEffect )
-		m_hFireEffect->Think();
-
 	SetLocalAngles( vTempAngles );
-	BaseClass::PreThink( );
+
+	// PreThink
+	BaseClass::PreThink();
 }
 
 //====================================================================
 //====================================================================
 void C_IN_Player::PostThink()
 {
+	// PostThink
 	BaseClass::PostThink();
 
 	// Mientras sigas vivo
 	if ( IsAlive() )
 	{
-		if ( C_BasePlayer::IsLocalPlayer(this) )
+		// Actualizamos la mirada
+		UpdateLookAt();
+
+		if ( IsLocalPlayer() )
 		{
-			if ( IsClimbingIncap() && !input->CAM_IsThirdPerson() )
-			{
-				input->CAM_ToThirdPerson();
-			}
+			UpdatePoseParams();
+			UpdateIncapHeadLight();
 		}
 	}
 }
@@ -218,15 +202,15 @@ bool C_IN_Player::Simulate()
 //====================================================================
 void C_IN_Player::CreateAnimationState()
 {
-	m_nAnimState = CreatePlayerAnimationState( this );
+	m_nAnimation = CreatePlayerAnimationState( this );
 }
 
-//=========================================================
+//====================================================================
 // Devuelve si el jugador esta presionando un botón.
-//=========================================================
+//====================================================================
 bool C_IN_Player::IsPressingButton( int iButton )
 {
-	return ((m_nButtons & iButton)) ? true : false;
+	return (m_nButtons & iButton) != 0;
 }
 
 //=========================================================
@@ -234,7 +218,7 @@ bool C_IN_Player::IsPressingButton( int iButton )
 //=========================================================
 bool C_IN_Player::IsButtonPressed( int iButton )
 {
-	return ((m_afButtonPressed & iButton)) ? true : false;
+	return (m_afButtonPressed & iButton) != 0;
 }
 
 //=========================================================
@@ -242,7 +226,7 @@ bool C_IN_Player::IsButtonPressed( int iButton )
 //=========================================================
 bool C_IN_Player::IsButtonReleased( int iButton )
 {
-	return ((m_afButtonReleased & iButton)) ? true : false;
+	return (m_afButtonReleased & iButton) != 0;
 }
 
 //=========================================================
@@ -254,6 +238,13 @@ void C_IN_Player::PostDataUpdate( DataUpdateType_t updateType )
 	SetNetworkAngles( GetLocalAngles() );
 
 	BaseClass::PostDataUpdate( updateType );
+
+	if ( updateType == DATA_UPDATE_CREATED )
+	{
+		// Cambios para el Jugador local
+		if ( IsLocalPlayer() )
+			engine->ClientCmd("exec localplayer;");
+	}
 }
 
 //=========================================================
@@ -278,7 +269,7 @@ const QAngle& C_IN_Player::GetRenderAngles()
 	}
 	else
 	{
-		return m_nAnimState->GetRenderAngles();
+		return GetAnimation()->GetRenderAngles();
 	}
 }
 
@@ -287,7 +278,9 @@ const QAngle& C_IN_Player::GetRenderAngles()
 //=========================================================
 void C_IN_Player::UpdateClientSideAnimation()
 {
-	m_nAnimState->Update();
+	// Actualizamos la animación
+	GetAnimation()->Update();
+
 	BaseClass::UpdateClientSideAnimation();
 }
 
@@ -404,17 +397,33 @@ void C_IN_Player::CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& f
 	BaseClass::CalcPlayerView( eyeOrigin, eyeAngles, fov );
 }
 
-//=========================================================
+//====================================================================
+//====================================================================
+void C_IN_Player::UpdateLookAt()
+{
+	if ( m_nBlinkTimer.IsElapsed() )
+	{
+		m_blinktoggle = !m_blinktoggle;
+		m_nBlinkTimer.Start( RandomFloat(1.5f, 4.0f) );
+	}
+
+	Vector vecForward;
+	AngleVectors( GetLocalAngles(), &vecForward );
+
+	m_viewtarget  = GetAbsOrigin() + vecForward * 512;
+}
+
+//====================================================================
 // [Evento] Un nuevo modelo
-//=========================================================
+//====================================================================
 CStudioHdr *C_IN_Player::OnNewModel()
 {
 	CStudioHdr *pHDR = BaseClass::OnNewModel();
 	InitializePoseParams();
 
 	// Reset the players animation states, gestures
-	if ( m_nAnimState )
-		m_nAnimState->OnNewModel();
+	if ( GetAnimation() )
+		GetAnimation()->OnNewModel();
 
 	return pHDR;
 }
@@ -425,23 +434,13 @@ void C_IN_Player::InitializePoseParams()
 	if ( !IsAlive() )
 		return;
 
-	iHeadYawPoseParam = LookupPoseParameter( "head_yaw" );
-	GetPoseParameterRange( iHeadYawPoseParam, flHeadYawMin, flHeadYawMax );
-
-	iHeadPitchPoseParam = LookupPoseParameter( "head_pitch" );
-	GetPoseParameterRange( iHeadPitchPoseParam, flHeadPitchMin, flHeadPitchMax );
-
 	CStudioHdr *pHDR = GetModelPtr();
+
+	if ( !pHDR )
+		return;
 
 	for ( int i = 0; i < pHDR->GetNumPoseParameters() ; i++ )
 		SetPoseParameter( pHDR, i, 0.0 );
-}
-
-//=========================================================
-//=========================================================
-inline float round( float f )
-{
-	return (float)( (int)( f + 0.5 ) );
 }
 
 //=========================================================
@@ -450,7 +449,7 @@ inline float round( float f )
 void C_IN_Player::DoPostProcessingEffects( PostProcessParameters_t &params )
 {
 	// El Jugador esta incapacitado
-	if ( IsIncap() || !IsAlive() && !IsObserver() )
+	if ( IsIncap() )
 	{
 		float flHealth		= GetHealth();
 		int i				= ( 5 + round(flHealth) );
@@ -471,12 +470,6 @@ void C_IN_Player::DoPostProcessingEffects( PostProcessParameters_t &params )
 		params.m_flParameters[ PPPN_VIGNETTE_START ]			= 0.1f;
 		params.m_flParameters[ PPPN_VIGNETTE_END ]				= flVignetteEnd;
 		params.m_flParameters[ PPPN_VIGNETTE_BLUR_STRENGTH ]	= 0.9f;
-	}
-
-	// El Jugador esta en combate
-	else if ( InCombat() )
-	{
-		params.m_flParameters[ PPPN_LOCAL_CONTRAST_STRENGTH ] += 0.3f;
 	}
 }
 
@@ -518,7 +511,7 @@ void C_IN_Player::DoAnimationEvent( PlayerAnimEvent_t pEvent, int nData )
 	}
 
 	MDLCACHE_CRITICAL_SECTION();
-	m_nAnimState->DoAnimationEvent( pEvent, nData );
+	GetAnimation()->DoAnimationEvent( pEvent, nData );
 }
 
 //=========================================================
@@ -571,23 +564,27 @@ bool C_IN_Player::ShouldReceiveProjectedTextures( int iFlags )
 //=========================================================
 void C_IN_Player::UpdatePlayerFlashlight()
 {
-	// Esto no aplica a nosotros mismos
-	//if ( this == C_BasePlayer::GetLocalPlayer() )
-		//return;
+	if ( this == C_IN_Player::GetLocalInPlayer() )
+		return;
 
-	// Ya no tiene la linterna activada
-	if ( !IsEffectActive( EF_DIMLIGHT ) )
+	// @TODO
+	if ( flashlight.GetBool() )
+		return;
+
+	// Linterna apagada
+	if ( !IsEffectActive(EF_DIMLIGHT) )
 	{
 		ReleaseFlashlight();
 		return;
 	}
 
 	// Ubicación, origen y destino de la luz.
-	Vector vecForward, vecRight, vecUp;
-	Vector vecPosition = EyePosition();
+	Vector vecPosition, vecForward, vecRight, vecUp;
 
 	// Obtenemos la ubicación para la linterna
-	GetFlashlightPosition( this, vecForward, vecRight, vecUp );
+	GetFlashlightPosition( this, vecPosition, vecForward, vecRight, vecUp );
+
+	ConVarRef flashlight_realistic("sv_in_flashlight_realistic");
 
 	// Debemos usar la luz realisitica (con sombras en tiempo real)
 	if ( flashlight_realistic.GetBool() )
@@ -600,13 +597,15 @@ void C_IN_Player::UpdatePlayerFlashlight()
 			// Creación fallida
 			if ( !m_nThirdFlashlight )
 			{
-				Warning("[C_IN_Player::AddEntity] Ha ocurrido un problema al crear la luz de %s \n", GetPlayerName());
+				Warning("[C_IN_Player::UpdatePlayerFlashlight] Ha ocurrido un problema al crear la luz de %s \n", GetPlayerName());
 				return;
 			}
 
 			// La encendemos.
 			m_nThirdFlashlight->Init();
 			m_nThirdFlashlight->SetFOV( 30.0f );
+			m_nThirdFlashlight->SetFar( GetFlashlightFarZ() );
+			m_nThirdFlashlight->SetBright( GetFlashlightLinearAtten() );
 			m_nThirdFlashlight->TurnOn();
 		}
 
@@ -617,50 +616,49 @@ void C_IN_Player::UpdatePlayerFlashlight()
 	trace_t tr;
 	UTIL_TraceLine( vecPosition, vecPosition + (vecForward * 100), MASK_SHOT, this, COLLISION_GROUP_NONE, &tr );
 
-		// El destello no ha sido creado
+	BeamInfo_t beamInfo;
+
+	// El destello no ha sido creado
+	if ( !m_nFlashlightBeam )
+	{	
+		beamInfo.m_nType		= TE_BEAMPOINTS;
+		beamInfo.m_vecStart		= tr.startpos;
+		beamInfo.m_vecEnd		= tr.endpos;
+		beamInfo.m_pszModelName = "sprites/glow_test02.vmt"; 
+		beamInfo.m_pszHaloName	= "sprites/light_glow03.vmt";
+		beamInfo.m_flHaloScale	= flashlightbeam_haloscale.GetFloat();
+		beamInfo.m_flWidth		= 13.0f;
+		beamInfo.m_flEndWidth	= flashlightbeam_endwidth.GetFloat();
+		beamInfo.m_flFadeLength = flashlightbeam_fadelength.GetFloat();
+		beamInfo.m_flAmplitude	= 0;
+		beamInfo.m_flBrightness = flashlightbeam_brightness.GetFloat();
+		beamInfo.m_flSpeed		= 0.0f;
+		beamInfo.m_nStartFrame	= 0.0;
+		beamInfo.m_flFrameRate	= 0.0;
+		beamInfo.m_flRed		= 255.0;
+		beamInfo.m_flGreen		= 255.0;
+		beamInfo.m_flBlue		= 255.0;
+		beamInfo.m_nSegments	= flashlightbeam_segments.GetFloat();
+		beamInfo.m_bRenderable	= true;
+		beamInfo.m_flLife		= 0.5;
+		beamInfo.m_nFlags		= FBEAM_FOREVER | FBEAM_ONLYNOISEONCE | FBEAM_NOTILE | FBEAM_HALOBEAM;
+
+		m_nFlashlightBeam = beams->CreateBeamPoints( beamInfo );
+
+		// Creación fallida
 		if ( !m_nFlashlightBeam )
 		{
-			BeamInfo_t beamInfo;
-			beamInfo.m_nType		= TE_BEAMPOINTS;
-			beamInfo.m_vecStart		= tr.startpos;
-			beamInfo.m_vecEnd		= tr.endpos;
-			beamInfo.m_pszModelName = "sprites/glow01.vmt"; 
-			beamInfo.m_pszHaloName	= "sprites/glow01.vmt";
-			beamInfo.m_flHaloScale	= flashlightbeam_haloscale.GetFloat();
-			beamInfo.m_flWidth		= 8.0f;
-			beamInfo.m_flEndWidth	= flashlightbeam_endwidth.GetFloat();
-			beamInfo.m_flFadeLength = flashlightbeam_fadelength.GetFloat();
-			beamInfo.m_flAmplitude	= 0;
-			beamInfo.m_flBrightness = flashlightbeam_brightness.GetFloat();
-			beamInfo.m_flSpeed		= 0.0f;
-			beamInfo.m_nStartFrame	= 0.0;
-			beamInfo.m_flFrameRate	= 0.0;
-			beamInfo.m_flRed		= 255.0;
-			beamInfo.m_flGreen		= 255.0;
-			beamInfo.m_flBlue		= 255.0;
-			beamInfo.m_nSegments	= flashlightbeam_segments.GetFloat();
-			beamInfo.m_bRenderable	= true;
-			beamInfo.m_flLife		= 0.5;
-			beamInfo.m_nFlags		= FBEAM_FOREVER | FBEAM_ONLYNOISEONCE | FBEAM_NOTILE | FBEAM_HALOBEAM;
-
-			m_nFlashlightBeam = beams->CreateBeamPoints( beamInfo );
-
-			// Creación fallida
-			if ( !m_nFlashlightBeam )
-			{
-				Warning("[C_IN_Player::AddEntity] Ha ocurrido un problema al crear el destello de %s \n", GetPlayerName());
-				return;
-			}
+			Warning("[C_IN_Player::AddEntity] Ha ocurrido un problema al crear el destello de %s \n", GetPlayerName());
+			return;
 		}
+	}
 
 	// Actualizamos la posición
-	BeamInfo_t beamInfo;
-	beamInfo.m_vecStart = tr.startpos;
-	beamInfo.m_vecEnd	= tr.endpos;
+	beamInfo.m_vecStart		= tr.startpos;
+	beamInfo.m_vecEnd		= tr.endpos;
 	beamInfo.m_flRed		= 255.0;
 	beamInfo.m_flGreen		= 255.0;
 	beamInfo.m_flBlue		= 255.0;
-
 	beams->UpdateBeamInfo( m_nFlashlightBeam, beamInfo );
 }
 
@@ -675,30 +673,16 @@ void C_IN_Player::UpdateFlashlight()
 	if ( !IsAlive() && GetObserverMode() == OBS_MODE_IN_EYE )
 		pPlayer = ToInPlayer( GetObserverTarget() );
 
+	// No hay Jugador
 	if ( !pPlayer )
 		return;
 
 	// EF_DIMLIGHT = Linterna
-	bool bFlashlightIsOn = pPlayer->IsEffectActive( EF_DIMLIGHT );
+	bool bIsOn = pPlayer->IsEffectActive( EF_DIMLIGHT );
 
-	// Has muerto o estas mirando mediante una camara, debe estar apagada
+	// El Jugador ha muerto, no mostrar la linterna
 	if ( !pPlayer->IsAlive() || pPlayer->GetViewEntity() )
-		bFlashlightIsOn = false;
-
-	// Ya no tienes la linterna encendida
-	if ( !bFlashlightIsOn )
-	{
-		if ( m_nFlashlight )
-		{
-			// Apagamos la linterna y la eliminamos
-			m_nFlashlight->TurnOff();
-
-			delete m_nFlashlight;
-			m_nFlashlight = NULL;
-		}
-
-		return;
-	}
+		bIsOn = false;
 
 	// La linterna no ha sido creada
 	if ( !m_nFlashlight )
@@ -711,7 +695,17 @@ void C_IN_Player::UpdateFlashlight()
 			Warning( "[C_IN_Player::UpdateFlashlight] Ha ocurrido un problema al crear la luz de %s \n", pPlayer->GetPlayerName() );
 			return;
 		}
+	}
 
+	// Linterna apagada
+	if ( !bIsOn )
+	{
+		// La apagamos
+		m_nFlashlight->TurnOff();
+		return;
+	}
+	else
+	{
 		// La encendemos
 		m_nFlashlight->TurnOn();
 	}
@@ -723,7 +717,7 @@ void C_IN_Player::UpdateFlashlight()
 	m_nFlashlight->SetBright( GetFlashlightLinearAtten() );
 
 	// Obtenemos la posición donde estará la linterna
-	GetFlashlightPosition( pPlayer, m_vecFlashlightForward, m_vecFlashlightRight, m_vecFlashlightUp );
+	GetFlashlightPosition( pPlayer, m_vecFlashlightOrigin, m_vecFlashlightForward, m_vecFlashlightRight, m_vecFlashlightUp );
 
 	// Actualizamos la linterna
 	m_nFlashlight->Update( m_vecFlashlightOrigin, m_vecFlashlightForward, m_vecFlashlightRight, m_vecFlashlightUp );
@@ -733,7 +727,7 @@ void C_IN_Player::UpdateFlashlight()
 //=========================================================
 const char *C_IN_Player::GetFlashlightTextureName() const
 {
-	return "effects/flashlight001";
+	return "effects/flashlight001_improved";
 }
 
 float C_IN_Player::GetFlashlightFOV() const
@@ -761,7 +755,7 @@ void C_IN_Player::ReleaseFlashlight()
 		m_nFlashlightBeam->flags	= 0;
 		m_nFlashlightBeam->die		= gpGlobals->curtime - 1;
 
-		//delete m_nFlashlightBeam;
+		delete m_nFlashlightBeam;
 		m_nFlashlightBeam = NULL;
 	}
 
@@ -773,16 +767,70 @@ void C_IN_Player::ReleaseFlashlight()
 	}
 }
 
+void C_IN_Player::UpdateIncapHeadLight()
+{
+	UpdateFlashlight();
+
+	C_IN_Player *pPlayer = this;
+
+	// Si estamos en modo espectador usemos la Linterna del Jugador a quien vemos
+	if ( !IsAlive() && GetObserverMode() == OBS_MODE_IN_EYE )
+		pPlayer = ToInPlayer( GetObserverTarget() );
+
+	// No hay Jugador
+	if ( !pPlayer )
+		return;
+
+	// No hemos creado la linterna
+	if ( !m_nHeadLight )
+	{
+		m_nHeadLight = new CFlashlightEffect( pPlayer->index, "effects/muzzleflash_light" );
+
+		if ( !m_nHeadLight )
+			return;
+	}
+
+	// No estamos incapacitados
+	if ( !IsIncap() )
+	{
+		m_nHeadLight->TurnOff();
+		return;
+	}
+	else
+	{
+		m_nHeadLight->TurnOn();
+	}
+
+	// Configuramos la linterna
+	m_nHeadLight->Init();
+	m_nHeadLight->SetFOV( 90.0f );
+	m_nHeadLight->SetFar( 180.0f );
+	m_nHeadLight->SetBright( 500.0f );
+
+	Vector vecForward, vecRight, vecUp;
+	Vector vecSrc = pPlayer->GetAbsOrigin();
+	QAngle angle;
+
+	VectorAngles( vecSrc, angle );
+	AngleVectors( angle, &vecForward, &vecRight, &vecUp );
+
+	trace_t tr1;
+	UTIL_TraceLine( vecSrc, vecSrc + vecUp * 100, MASK_SOLID, this, COLLISION_GROUP_NONE, &tr1 );
+
+	// Actualizamos la linterna
+	m_nHeadLight->Update( tr1.endpos, -vecUp, vecRight, vecForward );
+}
+
 //=========================================================
 // Establece en las variables los vectores de la posición
 // de la linterna del Jugador
 //=========================================================
-void C_IN_Player::GetFlashlightPosition( C_IN_Player *pPlayer, Vector &vecForward, Vector &vecRight, Vector &vecUp )
+void C_IN_Player::GetFlashlightPosition( C_IN_Player *pPlayer, Vector &vecPosition, Vector &vecForward, Vector &vecRight, Vector &vecUp, const char *pWeaponAttach )
 {
 	if ( !pPlayer )
 		return;
 
-	m_vecFlashlightOrigin = GetRenderOrigin() + m_vecViewOffset;
+	ConVarRef flashlight_weapon("sv_in_flashlight_weapon");
 
 	// ¿Desde la boquilla del arma?
 	bool bFromWeapon = ( flashlight_weapon.GetBool() && pPlayer->GetActiveInWeapon() );
@@ -792,15 +840,22 @@ void C_IN_Player::GetFlashlightPosition( C_IN_Player *pPlayer, Vector &vecForwar
 	C_BaseAnimating *pParent	= pPlayer;
 	const char *pAttachment		= "eyes";
 
+	bool bFromOther = false;
+
 	// La luz debe venir de la boquilla de nuestra arma
 	if ( bFromWeapon )
 	{
-		if ( !C_BasePlayer::IsLocalPlayer(this) || input->CAM_IsThirdPerson() )
-			pParent	= pPlayer->GetActiveInWeapon();
+		if ( !C_BasePlayer::IsLocalPlayer(pPlayer) || pPlayer != C_BasePlayer::GetLocalPlayer() )
+		{
+			pParent		= pPlayer->GetActiveInWeapon();
+			bFromOther	= true;
+		}
 		else
+		{
 			pParent	= pPlayer->GetViewModel();
+		}
 
-		pAttachment = "muzzle";
+		pAttachment = pWeaponAttach;
 	}
 
 	if ( !pParent )
@@ -811,15 +866,24 @@ void C_IN_Player::GetFlashlightPosition( C_IN_Player *pPlayer, Vector &vecForwar
 	// El acoplamiento existe, obtenemos la ubicación de este
 	if ( iAttachment >= 0 )
 	{
-		QAngle eyeAngles = pPlayer->EyeAngles();
+		QAngle eyeAngles;
+		pParent->GetAttachment( iAttachment, vecPosition, eyeAngles );
 
-		pParent->GetAttachment( iAttachment, m_vecFlashlightOrigin, eyeAngles );
-		AngleVectors( eyeAngles, &vecForward, &vecRight, &vecUp );
+		// @FIX!
+		if ( bFromOther && bFromWeapon )
+		{
+			AngleVectors( eyeAngles, &vecRight, &vecUp, &vecForward );
+		}
+		else
+		{
+			AngleVectors( eyeAngles, &vecForward, &vecRight, &vecUp );
+		}		
 	}
 
 	// De otra forma la luz se originara desde nuestros ojos
 	else
 	{
+		vecPosition = EyePosition();
 		pPlayer->EyeVectors( &vecForward, &vecRight, &vecUp );
 	}
 }
@@ -837,12 +901,12 @@ bool C_IN_Player::CreateLightEffects()
 
 	if ( IsEffectActive(EF_BRIGHTLIGHT) )
 	{
-		dl = effects->CL_AllocDlight ( index );
-		dl->origin = GetAbsOrigin();
-		dl->origin[2] += 16;
-		dl->color.r = dl->color.g = dl->color.b = 250;
-		dl->radius = random->RandomFloat(400,431);
-		dl->die = gpGlobals->curtime + 0.001;
+		dl = effects->CL_AllocDlight( index );
+		dl->origin		= GetAbsOrigin();
+		dl->origin[2]	+= 16;
+		dl->color.r		= dl->color.g = dl->color.b = 250;
+		dl->radius		= random->RandomFloat(400,431);
+		dl->die			= gpGlobals->curtime + 0.001;
 	}
 
 	return true;
@@ -877,15 +941,14 @@ bool C_IN_Player::CreateMove( float flInputSampleTime, CUserCmd *pCmd )
 	else
 	{
 		// Giro
-		if ( pCmd->sidemove < 0 )
-			pCmd->viewangles.z -= .5f;
-		if ( pCmd->sidemove > 0 )
-			pCmd->viewangles.z += .5f;
+		if ( !IsObserver() )
+		{
+			if ( pCmd->sidemove < 0 )
+				pCmd->viewangles.z -= .5f;
+			if ( pCmd->sidemove > 0 )
+				pCmd->viewangles.z += .5f;
+		}
 	}
-
-	// Botones desactivados.
-	//if ( m_afButtonDisabled != 0 )
-		//pCmd->buttons &= ~( m_afButtonDisabled );
 
 	return BaseClass::CreateMove( flInputSampleTime, pCmd );
 }

@@ -11,7 +11,7 @@
 
 #include "engine/ivdebugoverlay.h"
 
-#include "deferred/deferred_shared_common.h"
+//#include "deferred/deferred_shared_common.h"
 
 #include "tier0/vprof.h"
 #include "tier1/KeyValues.h"
@@ -20,36 +20,34 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-//=========================================================
+//===============================================================================
 // Comandos
-//=========================================================
+//===============================================================================
 
 extern ConVar r_flashlightdepthres;
 extern ConVar r_flashlightdepthtexture;
 
-static ConVar r_flashlightvisualizetrace( "r_flashlightvisualizetrace", "0", FCVAR_CHEAT );
-static ConVar r_flashlightladderdist( "r_flashlightladderdist", "40.0", FCVAR_CHEAT );
+ConVar r_projectedtexture_filter("r_projectedtexture_filter", "0.5", FCVAR_ARCHIVE);
 
-static ConVar r_flashlightlockposition( "r_flashlightlockposition", "0", FCVAR_CHEAT );
-static ConVar r_flashlightshadowatten( "r_flashlightshadowatten", "0.35", FCVAR_CHEAT );
+ConVar r_flashlightvisualizetrace( "r_flashlightvisualizetrace", "0", FCVAR_CHEAT );
+ConVar r_flashlightladderdist( "r_flashlightladderdist", "40.0", FCVAR_CHEAT );
 
-static ConVar r_flashlightmuzzleflashfov( "r_flashlightmuzzleflashfov", "120", FCVAR_CHEAT );
+ConVar r_flashlightlockposition( "r_flashlightlockposition", "0", FCVAR_CHEAT );
+ConVar r_flashlightshadowatten( "r_flashlightshadowatten", "0.35", FCVAR_CHEAT );
 
-static ConVar r_flashlightnearoffsetscale( "r_flashlightnearoffsetscale", "1.0", FCVAR_CHEAT );
-static ConVar r_flashlighttracedistcutoff( "r_flashlighttracedistcutoff", "128" );
-static ConVar r_flashlightbacktraceoffset( "r_flashlightbacktraceoffset", "0.4", FCVAR_CHEAT );
+ConVar r_flashlightmuzzleflashfov( "r_flashlightmuzzleflashfov", "120", FCVAR_CHEAT );
 
-//=========================================================
-// Callbacks
-//=========================================================
+ConVar r_flashlightnearoffsetscale( "r_flashlightnearoffsetscale", "1.0", FCVAR_CHEAT );
+ConVar r_flashlighttracedistcutoff( "r_flashlighttracedistcutoff", "128" );
+ConVar r_flashlightbacktraceoffset( "r_flashlightbacktraceoffset", "0.4", FCVAR_CHEAT );
 
-//=========================================================
+//==============================================================================
 // Constructor
-//=========================================================
-CBaseFlashlightEffect::CBaseFlashlightEffect( int iIndex, const char *pTextureName )
+//==============================================================================
+CBaseFlashlightEffect::CBaseFlashlightEffect( int index, const char *pTextureName )
 {
 	m_nFlashlightHandle		= CLIENTSHADOW_INVALID_HANDLE;
-	m_iEntIndex				= iIndex;
+	m_iEntIndex				= index;
 
 	m_bIsOn					= false;
 	m_flDie					= 0;
@@ -61,32 +59,29 @@ CBaseFlashlightEffect::CBaseFlashlightEffect( int iIndex, const char *pTextureNa
 
 	// Iniciamos la textura de la luz
 	UpdateFlashlightTexture( pTextureName );
-	
-	// Iniciamos la textura del Flash
-	m_nMuzzleFlashTexture.Init( "effects/muzzleflash_light", TEXTURE_GROUP_OTHER, true );
 }
 
-//=========================================================
+//===============================================================================
 // Destructor
-//=========================================================
+//===============================================================================
 CBaseFlashlightEffect::~CBaseFlashlightEffect()
 {
 	// Apagamos la luz
 	TurnOff();
 }
 
-//=========================================================
+//===============================================================================
 // Enciende la linterna
-//=========================================================
+//===============================================================================
 void CBaseFlashlightEffect::TurnOn()
 {
 	m_bIsOn					= true;
 	m_flCurrentPullBackDist = 1.0f;
 }
 
-//=========================================================
+//===============================================================================
 // Apaga la linterna
-//=========================================================
+//===============================================================================
 void CBaseFlashlightEffect::TurnOff()
 {
 	// No esta encendida
@@ -116,9 +111,9 @@ void CBaseFlashlightEffect::TurnOff()
 #endif
 }
 
-//=========================================================
+//===============================================================================
 // Pensamiento
-//=========================================================
+//===============================================================================
 void CBaseFlashlightEffect::Think()
 {
 	if ( m_flDie > 0 )
@@ -131,9 +126,9 @@ void CBaseFlashlightEffect::Think()
 	}
 }
 
-//=========================================================
+//===============================================================================
 // Actualiza la ubicación de la luz
-//=========================================================
+//===============================================================================
 void CBaseFlashlightEffect::Update( const Vector &vecPos, const Vector &vecForward, const Vector &vecRight, const Vector &vecUp )
 {
 	VPROF_BUDGET( __FUNCTION__, VPROF_BUDGETGROUP_SHADOW_DEPTH_TEXTURING );
@@ -163,9 +158,9 @@ void CBaseFlashlightEffect::Update( const Vector &vecPos, const Vector &vecForwa
 #endif
 }
 
-//=========================================================
+//===============================================================================
 // Actualiza la textura de la luz
-//=========================================================
+//===============================================================================
 void CBaseFlashlightEffect::UpdateFlashlightTexture( const char* pTextureName )
 {
 	static const char *pEmptyString = "";
@@ -186,10 +181,14 @@ void CBaseFlashlightEffect::UpdateFlashlightTexture( const char* pTextureName )
 
 		V_strncpy( m_textureName, pTextureName, sizeof(m_textureName) );
 	}
+
+	// Iniciamos la textura del Flash
+	if ( !m_nMuzzleFlashTexture.IsValid() )
+		m_nMuzzleFlashTexture.Init( "effects/muzzleflash_light", TEXTURE_GROUP_OTHER, true );
 }
 
-//=========================================================
-//=========================================================
+//===============================================================================
+//===============================================================================
 void CBaseFlashlightEffect::UpdateLightProjection( FlashlightState_t &state )
 {
 	if ( m_nFlashlightHandle == CLIENTSHADOW_INVALID_HANDLE )
@@ -207,8 +206,8 @@ void CBaseFlashlightEffect::UpdateLightProjection( FlashlightState_t &state )
 	g_pClientShadowMgr->UpdateProjectedTexture( m_nFlashlightHandle, true );
 }
 
-//=========================================================
-//=========================================================
+//===============================================================================
+//===============================================================================
 bool CBaseFlashlightEffect::UpdateDefaultFlashlightState( FlashlightState_t& state, const Vector &vecPos, const Vector &vecForward, const Vector &vecRight, const Vector &vecUp )
 {
 	VPROF_BUDGET( __FUNCTION__, VPROF_BUDGETGROUP_SHADOW_DEPTH_TEXTURING );
@@ -223,39 +222,44 @@ bool CBaseFlashlightEffect::UpdateDefaultFlashlightState( FlashlightState_t& sta
 	state.m_fQuadraticAtten		= m_flQuadratic;
 	state.m_fConstantAtten		= m_flConstant;
 
+	// Color de la luz
 	state.m_Color[0] = 1.0f;
 	state.m_Color[1] = 1.0f;
 	state.m_Color[2] = 1.0f;
 	state.m_Color[3] = m_flAlpha;
 
-	// Distancia
-	state.m_NearZ	= m_flNear + r_flashlightnearoffsetscale.GetFloat() * m_flCurrentPullBackDist;
-	state.m_FarZ	= state.m_FarZAtten = m_flFar;
-	
-	state.m_bEnableShadows			= ( m_bCastsShadows && r_flashlightdepthtexture.GetBool() );
-	state.m_flShadowMapResolution	= r_flashlightdepthres.GetInt();
+	// Distancia y FOV
+	state.m_NearZ					= m_flNear + r_flashlightnearoffsetscale.GetFloat() * m_flCurrentPullBackDist;
+	state.m_FarZ					= state.m_FarZAtten = m_flFar;
+	state.m_fHorizontalFOVDegrees	= state.m_fVerticalFOVDegrees = m_flFOV;
 
 	// Es el efecto de un "MuzzleFlash"
 	if ( m_bMuzzleFlashEnabled )
 	{
 		state.m_pSpotlightTexture		= m_nMuzzleFlashTexture;
-		state.m_pProjectedMaterial		= NULL;
-		state.m_fHorizontalFOVDegrees	= state.m_fVerticalFOVDegrees = r_flashlightmuzzleflashfov.GetFloat();
+		state.m_fLinearAtten			= m_flMuzzleFlashBrightness;
 
-		state.m_fLinearAtten = m_flMuzzleFlashBrightness;
+		state.m_bShadowHighRes			= false;
+		state.m_nShadowQuality			= 0;
+		state.m_flShadowFilterSize		= 2.0f;
 	}
 
 	// Es una linterna normal
 	else
 	{
 		state.m_pSpotlightTexture		= m_nFlashlightTexture;
-		state.m_pProjectedMaterial		= NULL;
-		state.m_fHorizontalFOVDegrees	= state.m_fVerticalFOVDegrees = m_flFOV;
+		state.m_fLinearAtten			= m_flBrightness;
 
-		state.m_fLinearAtten = m_flBrightness;
+		state.m_bShadowHighRes			= true;
+		state.m_nShadowQuality			= 1;
+		state.m_flShadowFilterSize		= r_projectedtexture_filter.GetFloat();
 	}
 
+	state.m_pProjectedMaterial			= NULL;
 	state.m_nSpotlightTextureFrame		= 0;
+
+	// Propiedades de las sombras generadas
+	state.m_bEnableShadows				= m_bCastsShadows;
 	state.m_flShadowAtten				= r_flashlightshadowatten.GetFloat();
 	state.m_flShadowSlopeScaleDepthBias = g_pMaterialSystemHardwareConfig->GetShadowSlopeScaleDepthBias();
 	state.m_flShadowDepthBias			= g_pMaterialSystemHardwareConfig->GetShadowDepthBias();
@@ -263,8 +267,8 @@ bool CBaseFlashlightEffect::UpdateDefaultFlashlightState( FlashlightState_t& sta
 	return true;
 }
 
-//=========================================================
-//=========================================================
+//===============================================================================
+//===============================================================================
 bool CBaseFlashlightEffect::ComputeLightPosAndOrientation( const Vector &vecPos, const Vector &vecForward, const Vector &vecRight, const Vector &vecUp, Vector& vecFinalPos, Quaternion& quatOrientation )
 {
 	vecFinalPos = vecPos;
@@ -419,85 +423,3 @@ bool CBaseFlashlightEffect::ComputeLightPosAndOrientation( const Vector &vecPos,
 
 	return true;
 }
-
-//==================================================================================================================================================================
-
-//=========================================================
-//=========================================================
-CFlashlightEffectManager &FlashlightEffectManager( int32 nSplitscreenPlayerOverride )
-{
-	static CFlashlightEffectManager s_flashlightEffectManagerArray[ MAX_SPLITSCREEN_PLAYERS ];
-
-	if ( nSplitscreenPlayerOverride != -1 )
-	{
-		return s_flashlightEffectManagerArray[ nSplitscreenPlayerOverride ];
-	}
-
-	ASSERT_LOCAL_PLAYER_RESOLVABLE();
-	return s_flashlightEffectManagerArray[ GET_ACTIVE_SPLITSCREEN_SLOT() ];
-}
-
-//=========================================================
-//=========================================================
-void CFlashlightEffectManager::TurnOnFlashlight( int nEntIndex, const char *pszTextureName, float flFov, float flFarZ, float flLinearAtten )
-{
-	m_pFlashlightTextureName	= pszTextureName;
-	m_nFlashlightEntIndex		= nEntIndex;
-	m_flFov						= flFov;
-	m_flFarZ					= flFarZ;
-	m_flLinearAtten				= flLinearAtten;
-	m_bFlashlightOn				= true;
-
-	// somebody is overriding the flashlight. We're keeping around the params to restore it later.
-	if ( m_bFlashlightOverride )
-		return;
-
-	if ( !m_pFlashlightEffect )
-	{
-		//if ( GetDeferredManager()->IsDeferredRenderingEnabled() )
-		//	m_pFlashlightEffect = new CFlashlightEffectDeferred( m_nFlashlightEntIndex, pszTextureName, flFov, flFarZ, flLinearAtten );
-		//else
-
-		if ( m_pFlashlightTextureName )
-		{
-		}
-		else
-		{
-		}
-		
-		m_pFlashlightEffect = new CFlashlightEffect( m_nFlashlightEntIndex );
-
-		if ( !m_pFlashlightEffect )
-			return;
-	}
-
-	m_pFlashlightEffect->TurnOn();
-}
-
-void CFlashlightEffectManager::TurnOffFlashlight( bool bForce )
-	{
-		m_pFlashlightTextureName = NULL;
-		m_bFlashlightOn = false;
-
-		if ( bForce )
-		{
-			m_bFlashlightOverride = false;
-			m_nMuzzleFlashFrameCountdown = 0;
-			m_muzzleFlashTimer.Invalidate();
-			delete m_pFlashlightEffect;
-			m_pFlashlightEffect = NULL;
-			return;
-		}
-
-		if ( m_bFlashlightOverride )
-		{
-			// don't mess with it while it's overridden
-			return;
-		}
-
-		if( m_nMuzzleFlashFrameCountdown == 0 && m_muzzleFlashTimer.IsElapsed() )
-		{
-			delete m_pFlashlightEffect;
-			m_pFlashlightEffect = NULL;
-		}
-	}

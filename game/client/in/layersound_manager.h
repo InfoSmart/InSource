@@ -21,16 +21,13 @@ public:
 	virtual void LevelInitPreEntity();
 
 	virtual void Update( float frametime );
-	virtual void UpdateSounds( LayerLevel iMaxLevel );
+	virtual void UpdateSounds( float flLevel );
 
 	virtual void AddSound( CLayerSound *pSound );
-	virtual void AddSound( CLayerSound *pSound, LayerLevel iLevel );
-
 	virtual void RemoveSound( CLayerSound *pSound );
 
 protected:
 	CUtlVector<CLayerSound *> m_nAllSounds;
-	CUtlVector<CLayerSound *> m_nSounds[LAYER_MAX_COUNT];
 };
 
 extern CLayerSoundManager *LayerSoundManager;

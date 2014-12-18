@@ -14,7 +14,8 @@ public:
 
 	CGameUIPanelWeb( vgui::VPANEL parent );
 
-	virtual bool CanPaint();
+	virtual bool ShouldPaint();
+	virtual void Paint();
 
 	virtual void OnGameUIActivated();
 	virtual void OnGameUIHidden();

@@ -8,17 +8,16 @@
 CLayerSoundManager g_LayerSoundManager;
 CLayerSoundManager *LayerSoundManager = &g_LayerSoundManager;
 
-#define FOR_EACH_LAYER for ( int l = 1; l < LAYER_MAX_COUNT; ++l )
 #define FOR_EACH_SOUND for ( int i = 0; i < m_nAllSounds.Count(); ++i )
-#define FOR_EACH_LAYER_SOUND( level ) for ( int i = 0; i < m_nSounds[##level##].Count(); ++i )
+//#define FOR_EACH_LAYER_SOUND( level ) for ( int i = 0; i < m_nSounds[##level##].Count(); ++i )
 
 //====================================================================
 // Comandos
 //====================================================================
 
-ConVar layersoundmanager_debug( "cl_layersoundmanager_debug", "0" );
+ConVar layersoundmanager_debug( "cl_layersoundmanager_debug", "1" );
 
-#define IS_SOUND_DEBUG layersoundmanager_debug.GetBool()
+#define LAYER_SOUND_DEBUG layersoundmanager_debug.GetBool()
 
 //====================================================================
 // [Evento] Se ha cargado un mapa
@@ -34,13 +33,9 @@ void CLayerSoundManager::LevelInitPreEntity()
 //====================================================================
 void CLayerSoundManager::Update( float frametime )
 {
-	// Limpiamos las listas de sonidos
-	FOR_EACH_LAYER
-	{
-		m_nSounds[l].Purge();
-	}
+	float flMaxLayer = LAYER_VERYLOW; 
 
-	// Separamos cada sonido en una lista de su capa
+	// Obtenemos el sonido con más prioridad que se reproduce ahora mismo
 	FOR_EACH_SOUND
 	{
 		CLayerSound *pSound = m_nAllSounds[i];
@@ -48,80 +43,63 @@ void CLayerSoundManager::Update( float frametime )
 		if ( !pSound )
 			continue;
 
-		AddSound( pSound, pSound->GetLayer() );
-	}
+		// No se esta reproduciendo
+		if ( !pSound->IsPlaying() )
+			continue;
 
-	LayerLevel maxLayer = LAYER_VERYLOW; 
+		if ( pSound->GetLevel() <= flMaxLayer )
+			continue;
 
-	FOR_EACH_LAYER
-	{
-		FOR_EACH_LAYER_SOUND( l )
-		{
-			CLayerSound *pSound = m_nSounds[l][i];
-
-			if ( !pSound )
-				continue;
-
-			// No se esta reproduciendo
-			if ( !pSound->IsPlaying() )
-				continue;
-
-			// Capa máxima que tiene un sonido reproduciendo
-			maxLayer = pSound->GetLayer();
-		}
+		// Capa máxima que tiene un sonido reproduciendo
+		flMaxLayer = pSound->GetLevel();
 	}
 
 	// Hacemos los cambios necesarios a los sonidos
-	UpdateSounds( maxLayer );
+	UpdateSounds( flMaxLayer );
 }
 
 //====================================================================
 //====================================================================
-void CLayerSoundManager::UpdateSounds( LayerLevel iMaxLevel )
+void CLayerSoundManager::UpdateSounds( float flMaxLevel )
 {
-	// Capas inferiores
-	for ( int l = LAYER_VERYLOW; l < iMaxLevel; ++l )
+	FOR_EACH_SOUND
 	{
-		FOR_EACH_LAYER_SOUND( l )
+		CLayerSound *pSound = m_nAllSounds[i];
+
+		if ( !pSound )
+			continue;
+
+		if ( !pSound->IsPlaying() )
+			continue;
+
+		// Menor prioridad
+		if ( pSound->GetLevel() < flMaxLevel )
 		{
-			CLayerSound *pSound = m_nSounds[l][i];
-
-			if ( !pSound )
-				continue;
-
 			// Bloqueamos el volumen y lo bajamos al minimo
 			if ( !pSound->IsBlocked() && pSound->m_nSoundPatch )
 			{
 				pSound->SetBlock( true );
 				ENVELOPE_CONTROLLER.SoundChangeVolume( pSound->m_nSoundPatch, 0.01f, 0.8f );
 
-				if ( IS_SOUND_DEBUG )
+				if ( LAYER_SOUND_DEBUG )
 				{
-					DevMsg( "[CLayerSoundManager::UpdateSounds] Bloqueando y bajando el volumen del sonido: %s (%i) - Capa maxima: %i \n", pSound->GetSoundName(), pSound->GetLayer(), (int)iMaxLevel );
+					DevMsg( "[CLayerSoundManager::UpdateSounds] Bloqueando y bajando el volumen del sonido: %s (%f) - Capa maxima: %f \n", pSound->GetSoundName(), pSound->GetLevel(), flMaxLevel );
 				}
 			}
 		}
-	}
 
-	// Capas superiores
-	for ( int l = iMaxLevel; l < LAYER_MAX_COUNT; ++l )
-	{
-		FOR_EACH_LAYER_SOUND( l )
+		// Mayor prioridad
+		if ( pSound->GetLevel() >= flMaxLevel )
 		{
-			CLayerSound *pSound = m_nSounds[l][i];
-
-			if ( !pSound )
-				continue;
-
 			// Restauramos el volumen
 			if ( pSound->IsBlocked() )
 			{
 				pSound->SetBlock( false );
 				pSound->SetVolume( pSound->GetVolume() );
 
-				if ( IS_SOUND_DEBUG )
+				if ( LAYER_SOUND_DEBUG )
 				{
-					DevMsg( "[CLayerSoundManager::UpdateSounds] Restaurando sonido: %s (%i) - Capa maxima: %i \n", pSound->GetSoundName(), pSound->GetLayer(), (int)iMaxLevel );
+					DevMsg( "[CLayerSoundManager::UpdateSounds] Restaurando sonido: %s (%f) - Capa maxima: %f \n", pSound->GetSoundName(), pSound->GetLevel(), flMaxLevel );
 				}
 			}
 		}
@@ -137,22 +115,6 @@ void CLayerSoundManager::AddSound( CLayerSound *pSound )
 		return;
 
 	m_nAllSounds.AddToTail( pSound );
-
-	if ( IS_SOUND_DEBUG )
-	{
-		DevMsg( "[CLayerSoundManager::AddSound] %s \n", pSound->GetSoundName() );
-	}
-}
-
-//====================================================================
-//====================================================================
-void CLayerSoundManager::AddSound( CLayerSound *pSound, LayerLevel iLevel )
-{
-	// Ya esta en la lista
-	if ( m_nSounds[iLevel].HasElement(pSound) )
-		return;
-
-	m_nSounds[iLevel].AddToTail( pSound );
 }
 
 //====================================================================

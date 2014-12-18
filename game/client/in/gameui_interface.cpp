@@ -92,7 +92,6 @@ IAchievementMgr *achievementmgr		= NULL;
 static CGameUI g_GameUI;
 static WHANDLE g_hMutex			= NULL;
 static WHANDLE g_hWaitMutex		= NULL;
-
 static IGameClientExports *g_pGameClientExports = NULL;
 
 IGameClientExports *GameClientExports()
@@ -189,7 +188,7 @@ void CGameUI::Initialize( CreateInterfaceFn factory )
 		xonline = (IXOnline *)factory( XONLINE_INTERFACE_VERSION, NULL );
 	#endif
 
-	bFailed = !enginesurfacefuncs || !gameuifuncs || !enginevguifuncs || !xboxsystem ||
+	bFailed = !enginesurfacefuncs || !gameuifuncs || !enginevguifuncs || !xboxsystem || 
 #ifdef _X360
 		!xonline ||
 #endif
@@ -197,21 +196,30 @@ void CGameUI::Initialize( CreateInterfaceFn factory )
 
 	// Hemos fallado
 	if ( bFailed )
-	{
 		Error( "[CGameUI::Initialize] Failed to get necessary interfaces \n" );
-	}
 
-	// Creamos el panel Web, esto controlara todo el UI
+	// Creamos la interfaz
+	CreateGameUI();
+}
+
+//====================================================================
+// Crea la interfaz del Juego
+//====================================================================
+void CGameUI::CreateGameUI()
+{
+	// Creamos el panel web para el menú
 	vgui::VPANEL rootpanel = enginevguifuncs->GetPanel( PANEL_GAMEUIDLL );
 	m_nWebPanelUI = new CGameUIPanelWeb( rootpanel );
 
-	vgui::VPANEL hudpanel = enginevguifuncs->GetPanel( PANEL_INGAMESCREENS );
+	// Creamos el panel web para el HUD
+	/*vgui::VPANEL hudpanel = enginevguifuncs->GetPanel( PANEL_INGAMESCREENS );
+	m_nWebPanelHUD =
 
 	#ifdef APOCALYPSE
 		new CAP_GameHUD( hudpanel );
 	#else
 		new CGameHUDWeb( hudPanel );
-	#endif
+	#endif*/
 }
 
 //====================================================================
@@ -269,6 +277,38 @@ void CGameUI::Start()
 
 	// Hasta ahora no hemos tenido ningún problema
 	Sys_SetLastError( SYS_NO_ERROR );
+
+	// Cargamos las carpetas "core" y "custom"
+	{
+		FileFindHandle_t fh;
+		const char *fn;
+
+		const char *m_pInSourceDirs[] = {
+			"core",
+			"custom"
+		};
+
+		for ( int i = 0; i < ARRAYSIZE(m_pInSourceDirs); ++i )
+		{
+			const char *pDirectory = UTIL_VarArgs( "%s/*", m_pInSourceDirs[i] );
+
+			for ( fn = g_pFullFileSystem->FindFirst(pDirectory, &fh); fn; fn = g_pFullFileSystem->FindNext(fh) )
+			{
+				if ( !stricmp( fn, ".") || !stricmp( fn, "..") )
+					continue;
+
+				// No es una carpeta
+				if ( !g_pFullFileSystem->FindIsDirectory(fh) )
+					continue;
+
+				char szCoreDir[512];
+				Q_snprintf( szCoreDir, sizeof(szCoreDir), "%s/%s/%s/", engine->GetGameDirectory(), m_pInSourceDirs[i], fn );
+				V_FixSlashes( szCoreDir );
+
+				g_pFullFileSystem->AddSearchPath( szCoreDir, "GAME" );
+			}
+		}
+	}
 
 	// Se trata de una PC, debemos cargar las librerías de Steam
 	if ( IsPC() )
@@ -336,25 +376,12 @@ void CGameUI::Shutdown()
 	// release platform mutex
 	// close the mutex
 	if ( g_hMutex )
-	{
 		Sys_ReleaseMutex(g_hMutex);
-	}
 
 	if ( g_hWaitMutex )
-	{
 		Sys_ReleaseMutex( g_hWaitMutex );
-	}
-
-	Awesomium::WebCore *pWebCore = Awesomium::WebCore::instance();
-
-	// Apagamos la instancia/proceso
-	if ( pWebCore && VAwesomium::m_iNumberOfViews <= 0 )
-	{
-		pWebCore->Shutdown();
-	}
 
 	steamapicontext->Clear();
-
 	ConVar_Unregister();
 	DisconnectTier3Libraries();
 	DisconnectTier2Libraries();
@@ -458,7 +485,7 @@ void CGameUI::OnGameUIActivated()
 	}
 
 	// Lo pasamos al UI web
-	GetWebPanel()->OnGameUIActivated();
+	GetGameUI()->OnGameUIActivated();
 
 	// Pausamos el servidor (si es pausable)
 	engine->ClientCmd_Unrestricted( "setpause nomsg" );
@@ -472,16 +499,14 @@ void CGameUI::OnGameUIHidden()
 	bool bWasActive = m_bActivatedUI;
 	m_bActivatedUI	= false;
 
-	// unpause the game when leaving the UI
-	engine->ClientCmd_Unrestricted( "unpause nomsg" );
-
 	if ( bWasActive )
-	{
 		SetGameUIActiveSplitScreenPlayerSlot( 0 );
-	}
 
 	// Lo pasamos al UI web
-	GetWebPanel()->OnGameUIHidden();
+	GetGameUI()->OnGameUIHidden();
+
+	// unpause the game when leaving the UI
+	engine->ClientCmd_Unrestricted( "unpause nomsg" );
 }
 
 //====================================================================
@@ -502,11 +527,11 @@ void CGameUI::OnDisconnectFromServer( uint8 eSteamLoginFailure )
 	m_iGameConnectionPort	= 0;
 	m_iGameQueryPort		= 0;
 
+	// Lo pasamos al UI web
+	GetGameUI()->OnDisconnectFromServer( eSteamLoginFailure );
+
 	// Notificamos a los modulos
 	g_VModuleLoader.PostMessageToAllModules(new KeyValues("DisconnectedFromGame"));
-
-	// Lo pasamos al UI web
-	GetWebPanel()->OnDisconnectFromServer( eSteamLoginFailure );
 }
 
 //====================================================================
@@ -530,11 +555,11 @@ void CGameUI::OnLevelLoadingStarted( const char *levelName, bool bShowProgressDi
 {
 	m_bIsLoading = true;
 
+	// Lo pasamos al panel web
+	GetGameUI()->OnLevelLoadingStarted( levelName, bShowProgressDialog );
+
 	// Notificamos
 	g_VModuleLoader.PostMessageToAllModules( new KeyValues( "LoadingStarted" ) );
-
-	// Lo pasamos al panel web
-	m_nWebPanelUI->OnLevelLoadingStarted( levelName, bShowProgressDialog );
 
 	// Don't play the start game sound if this happens before we get to the first frame
 	m_iPlayGameStartupSound = 0;
@@ -547,11 +572,11 @@ void CGameUI::OnLevelLoadingFinished( bool bError, const char *failureReason, co
 {
 	m_bIsLoading = false;
 
+	// Lo pasamos al panel web
+	GetGameUI()->OnLevelLoadingFinished( bError, failureReason, extendedReason );
+
 	// Notificamos
 	g_VModuleLoader.PostMessageToAllModules( new KeyValues( "LoadingFinished" ) );
-
-	// Lo pasamos al panel web
-	m_nWebPanelUI->OnLevelLoadingFinished( bError, failureReason, extendedReason );
 }
 
 //====================================================================
@@ -561,7 +586,7 @@ void CGameUI::OnLevelLoadingFinished( bool bError, const char *failureReason, co
 bool CGameUI::UpdateProgressBar( float progress, const char *statusText )
 {
 	// Lo pasamos al panel web
-	return m_nWebPanelUI->UpdateProgressBar( progress, statusText );
+	return GetGameUI()->UpdateProgressBar( progress, statusText );
 }
 
 //====================================================================
@@ -569,7 +594,7 @@ bool CGameUI::UpdateProgressBar( float progress, const char *statusText )
 bool CGameUI::SetShowProgressText( bool show )
 {
 	// Lo pasamos al panel web
-	return m_nWebPanelUI->SetShowProgressText( show );
+	return GetGameUI()->SetShowProgressText( show );
 }
 
 //====================================================================
@@ -577,8 +602,7 @@ bool CGameUI::SetShowProgressText( bool show )
 void CGameUI::SetProgressLevelName( const char *levelName )
 {
 	// Lo pasamos al panel web
-	MEM_ALLOC_CREDIT();
-	m_nWebPanelUI->SetProgressLevelName( levelName );
+	GetGameUI()->SetProgressLevelName( levelName );
 }
 
 //====================================================================

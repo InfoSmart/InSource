@@ -1,8 +1,12 @@
+//==== InfoSmart 2014. http://creativecommons.org/licenses/by/2.5/mx/ ===========//
+
 #include "cbase.h"
 #include "inputsystem/iinputsystem.h"
 
 #include <VAwesomium.h>
 #include <vgui_controls/Controls.h>
+
+#include "vstdlib/jobthread.h"
 
 #define DEPTH 4
 
@@ -15,35 +19,33 @@ static Awesomium::WebSession *m_WebSession;
 //=========================================================
 // Constructor
 //=========================================================
-VAwesomium::VAwesomium( Panel *parent, const char *panelName ) : Panel( parent, panelName )
+VAwesomium::VAwesomium( Panel *parent ) : Panel( parent )
 {
 	m_iNumberOfViews++;
 	
 	m_iTextureId	= surface()->CreateNewTextureID( true );
 	m_WebCore		= WebCore::instance();
+	m_BitmapSurface = NULL;
 
 	// Aún no existe una instancia de Awesomium
 	if ( !m_WebCore )
 	{
-		// Configuración del navegador
-		WebStringArray options;
-		options.Push( WSLit("--disable-3d-apis") );
-		options.Push( WSLit("--disable-file-system") );
-		options.Push( WSLit("--disable-geolocation") );
-		options.Push( WSLit("--disable-gl-multisampling") );
-		options.Push( WSLit("--disable-glsl-translator") );
-
 		// Configuración del proceso
 		WebConfig config;
 		config.log_level							= kLogLevel_Verbose;
+		config.package_path							= WSLit( VarArgs( "%s/bin/awesomium/", engine->GetGameDirectory() ) );
 		config.remote_debugging_port				= 1337;
-		//config.additional_options					= options;
 		config.reduce_memory_usage_on_navigation	= true;
 
 		// Creamos la instancia
 		m_WebCore = WebCore::Initialize( config );
 	}
+}
 
+//=========================================================
+//=========================================================
+void VAwesomium::Init()
+{
 	// Configuración para las sesiones
 	WebPreferences m_WebPrefs;
 	m_WebPrefs.enable_dart							= false;
@@ -53,10 +55,11 @@ VAwesomium::VAwesomium( Panel *parent, const char *panelName ) : Panel( parent, 
 	m_WebPrefs.allow_scripts_to_open_windows		= false;
 	m_WebPrefs.allow_scripts_to_close_windows		= false;
 	m_WebPrefs.allow_running_insecure_content		= true;
+	m_WebPrefs.allow_universal_access_from_file_url	= true;
 
 	// Creamos una sesión
 	if ( !m_WebSession )
-		m_WebSession = m_WebCore->CreateWebSession( WSLit(VarArgs("%s\\%s", engine->GetGameDirectory(), "sessions")), m_WebPrefs );
+		m_WebSession = m_WebCore->CreateWebSession( WSLit(""), m_WebPrefs );
 
 	// Creamos una vista
 	m_WebView = m_WebCore->CreateWebView( GetTall(), GetWide(), m_WebSession );
@@ -75,11 +78,11 @@ VAwesomium::~VAwesomium()
 {
 	m_iNumberOfViews--;
 	
-	// Destruimos la vista y la sesión
+	// Destruimos la vista
 	if ( m_WebView )
 		m_WebView->Destroy();
 	
-	// Apagamos la instancia/proceso
+	// Ya no hay más vistas, apagamos Awesomium
 	if ( m_WebCore && m_iNumberOfViews <= 0 )
 	{
 		if ( m_WebSession )
@@ -110,18 +113,39 @@ void VAwesomium::Think()
 	m_WebCore->Update();
 }
 
+void RealPaint( VAwesomium *pPanel )
+{
+	pPanel->ThreadPaint();
+	ThreadSleep( 100 );
+}
+
 void VAwesomium::Paint()
 {
 	BaseClass::Paint();
-
-	m_BitmapSurface = ( BitmapSurface * )m_WebView->surface();
-
-	if ( m_BitmapSurface && m_iNearestPowerWidth + m_iNearestPowerHeight > 0 )
-	{
-		AllocateViewBuffer();
-		DrawBrowserView();
-	}
+	ThreadPaint();
 }
+
+void VAwesomium::ThreadPaint()
+{
+	//try
+	{
+		m_BitmapSurface = ( BitmapSurface * )m_WebView->surface();
+
+		if ( m_BitmapSurface )
+		{
+			AllocateViewBuffer();
+			DrawBrowserView();
+		}
+	}
+	/*catch ( ... )
+	{
+		Warning("[VAwesomium::ThreadPaint] Exception!!! \n");
+	}*/
+}
+
+#ifdef Error
+#undef Error
+#endif
 
 int VAwesomium::NearestPowerOfTwo(int v)
 {
@@ -138,20 +162,24 @@ int VAwesomium::NearestPowerOfTwo(int v)
 
 void VAwesomium::AllocateViewBuffer()
 {
-	//2048 - 1024 - 8388608 
-	//DevMsg( "[AllocateViewBuffer] %i - %i - %i \n", m_iNearestPowerWidth, m_iNearestPowerHeight, (m_iNearestPowerWidth * m_iNearestPowerHeight * DEPTH) );
-
 	//
 	// FIXME: Esto consume 20fps !!!
 	//
 
-	unsigned char* buffer = new unsigned char[m_iNearestPowerWidth * m_iNearestPowerHeight * DEPTH];
-	m_BitmapSurface->CopyTo( buffer, m_BitmapSurface->width() * DEPTH, DEPTH, true, false );
+	try
+	{
+		unsigned char *buffer = new unsigned char[ m_BitmapSurface->width() * m_BitmapSurface->height() * DEPTH ];
+		m_BitmapSurface->CopyTo( buffer, m_BitmapSurface->row_span(), DEPTH, true, false );
+	
+		surface()->DrawSetTextureRGBA( m_iTextureId, buffer, m_BitmapSurface->width(), m_BitmapSurface->height() );
 
-	vgui::surface()->DrawSetTextureRGBA( m_iTextureId, buffer, m_BitmapSurface->width(), m_BitmapSurface->height() );
-
-	delete buffer;
-	buffer = NULL;
+		delete buffer;
+		buffer = NULL;
+	}
+	catch ( ... )
+	{
+		Warning("[VAwesomium::AllocateViewBuffer] %i - %i - %i \n", m_BitmapSurface->width(), m_BitmapSurface->height(), m_BitmapSurface->row_span());
+	}
 }
 
 void VAwesomium::DrawBrowserView()
@@ -160,10 +188,16 @@ void VAwesomium::DrawBrowserView()
 	// FIXME: Esto consume 10 fps
 	//
 
-	vgui::surface()->DrawSetTexture( m_iTextureId );
-	vgui::surface()->DrawSetColor( 255, 255, 255, 255 );
-
-	vgui::surface()->DrawTexturedSubRect( 0, 0, m_BitmapSurface->width(), m_BitmapSurface->height(), 0.0f, 0.0f, 1, 1 );
+	try
+	{
+		surface()->DrawSetTexture( m_iTextureId );
+		surface()->DrawSetColor( 255, 255, 255, 255 );
+		surface()->DrawTexturedSubRect( 0, 0, m_BitmapSurface->width(), m_BitmapSurface->height(), 0.0f, 0.0f, 1, 1 );
+	}
+	catch ( ... )
+	{
+		Warning("[VAwesomium::DrawBrowserView] %i - %i - %i \n", m_BitmapSurface->width(), m_BitmapSurface->height(), m_BitmapSurface->row_span());
+	}
 }
 
 void VAwesomium::OnCursorMoved( int x, int y )
@@ -243,9 +277,6 @@ void VAwesomium::OnKeyCodeReleased(KeyCode code)
 
 void VAwesomium::ResizeView()
 {
-	m_iNearestPowerWidth	= NearestPowerOfTwo( GetWide() );
-	m_iNearestPowerHeight	= NearestPowerOfTwo( GetTall() );
-
 	m_WebView->Resize( GetWide(), GetTall() );
 }
 
