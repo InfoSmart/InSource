@@ -401,6 +401,7 @@ void C_IN_Player::CalcPlayerView( Vector& eyeOrigin, QAngle& eyeAngles, float& f
 //====================================================================
 void C_IN_Player::UpdateLookAt()
 {
+	// ¡Parpadeamos!
 	if ( m_nBlinkTimer.IsElapsed() )
 	{
 		m_blinktoggle = !m_blinktoggle;
@@ -545,6 +546,7 @@ ShadowType_t C_IN_Player::ShadowCastType()
 	if ( !IsVisible() )
 		 return SHADOWS_NONE;
 
+	return SHADOWS_RENDER_TO_DEPTH_TEXTURE;
 	return SHADOWS_RENDER_TO_TEXTURE_DYNAMIC;
 }
 

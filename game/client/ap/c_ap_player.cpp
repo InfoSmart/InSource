@@ -5,6 +5,8 @@
 
 #include "weapon_inbase.h"
 
+#include "c_te_legacytempents.h"
+
 #include "ap_playeranimstate.h"
 #include "tier0/memdbgon.h"
 
@@ -49,9 +51,9 @@ void C_AP_Player::DoPostProcessingEffects( PostProcessParameters_t &params )
 //====================================================================
 void C_AP_Player::UpdatePoseParams()
 {
-	if ( GetViewModel() )
+	if ( GetViewModel() && GetActiveInWeapon() )
 	{
-		if ( GetActiveInWeapon() && GetActiveInWeapon()->IsIronsighted() )
+		if ( GetActiveInWeapon()->IsIronsighted() )
 			GetViewModel()->SetPoseParameter( "ver_aims", 0.0f );
 
 		float flMoveX = GetPoseParameter( LookupPoseParameter("move_x") );

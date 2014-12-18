@@ -422,7 +422,8 @@ C_BasePlayer::C_BasePlayer() : m_iv_vecViewOffset( "C_BasePlayer::m_iv_vecViewOf
 C_BasePlayer::~C_BasePlayer()
 {
 	DeactivateVguiScreen( m_pCurrentVguiScreen.Get() );
-	/*for ( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; ++i )
+
+	for ( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; ++i )
 	{
 		if ( this == s_pLocalPlayer[ i ] )
 		{	
@@ -433,12 +434,12 @@ C_BasePlayer::~C_BasePlayer()
 			s_pLocalPlayer[ i ]->RemoveSplitScreenPlayer( this );
 		}
 
-		if ( m_bFlashlightEnabled[ i ] )
+		/*if ( m_bFlashlightEnabled[ i ] )
 		{
 			FlashlightEffectManager( i ).TurnOffFlashlight( true );
 			m_bFlashlightEnabled[ i ] = false;
-		}
-	}*/
+		}*/
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -1804,7 +1805,7 @@ C_BasePlayer *C_BasePlayer::GetLocalPlayer( int nSlot /*= -1*/ )
 {
 	if ( nSlot == -1 )
 	{
-//		ASSERT_LOCAL_PLAYER_RESOLVABLE();
+		ASSERT_LOCAL_PLAYER_RESOLVABLE();
 		return s_pLocalPlayer[ GET_ACTIVE_SPLITSCREEN_SLOT() ];
 	}
 	return s_pLocalPlayer[ nSlot ];

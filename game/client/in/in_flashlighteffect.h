@@ -65,6 +65,8 @@ private:
 class CBaseFlashlightEffect
 {
 public:
+	DECLARE_CLASS_NOBASE( CBaseFlashlightEffect );
+
 	CBaseFlashlightEffect( int index, const char *pTextureName );
 	~CBaseFlashlightEffect();
 

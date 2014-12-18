@@ -1908,7 +1908,7 @@ void CClientShadowMgr::LevelShutdownPostEntity()
 	// Paranoid code to make sure all flashlights are deactivated.
 	// This should happen in the C_BasePlayer destructor, but I'm turning everything off to release the
 	// flashlight shadows just in case.
-	for ( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; i++ )
+	//for ( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; i++ )
 	{
 		//FlashlightEffectManager( i ).TurnOffFlashlight( true );
 	}

@@ -639,17 +639,16 @@ void CViewRender::SetUpView()
 	// Initialize view structure with default values
 	float farZ = GetZFar();
 
-	CViewSetup &view = GetView();
+	CViewSetup &viewSetup = GetView();
 
-	view.zFar				= farZ;
-	view.zFarViewmodel	= farZ;
+	viewSetup.zFar				= farZ;
+	viewSetup.zFarViewmodel		= farZ;
 	// UNDONE: Make this farther out? 
 	//  closest point of approach seems to be view center to top of crouched box
-	view.zNear			= GetZNear();
-	view.zNearViewmodel	= 1;
-	view.fov				= default_fov.GetFloat();
-
-	view.m_bOrtho			= false;
+	viewSetup.zNear				= GetZNear();
+	viewSetup.zNearViewmodel	= 1;
+	viewSetup.fov				= default_fov.GetFloat();
+	viewSetup.m_bOrtho			= false;
 
 	// Enable spatial partition access to edicts
 	partition->SuppressLists( PARTITION_ALL_CLIENT_EDICTS, false );
@@ -665,7 +664,7 @@ void CViewRender::SetUpView()
 
 	if ( g_bEngineIsHLTV )
 	{
-		HLTVCamera()->CalcView( view.origin, view.angles, view.fov );
+		HLTVCamera()->CalcView( viewSetup.origin, viewSetup.angles, viewSetup.fov );
 	}
 #if defined( REPLAY_ENABLED )
 	else if ( engine->IsReplay() )
@@ -679,7 +678,7 @@ void CViewRender::SetUpView()
 		// FIXME: What happens when there's no player?
 		if (pPlayer)
 		{
-			pPlayer->CalcView( view.origin, view.angles, view.zNear, view.zFar, view.fov );
+			pPlayer->CalcView( viewSetup.origin, viewSetup.angles, viewSetup.zNear, viewSetup.zFar, viewSetup.fov );
 
 			// If we are looking through another entities eyes, then override the angles/origin for GetView()
 			int viewentity = render->GetViewEntity();
@@ -689,17 +688,17 @@ void CViewRender::SetUpView()
 				C_BaseEntity *ve = cl_entitylist->GetEnt( viewentity );
 				if ( ve )
 				{
-					VectorCopy( ve->GetAbsOrigin(), view.origin );
-					VectorCopy( ve->GetAbsAngles(), view.angles );
+					VectorCopy( ve->GetAbsOrigin(), viewSetup.origin );
+					VectorCopy( ve->GetAbsAngles(), viewSetup.angles );
 				}
 			}
 
-			pPlayer->CalcViewModelView( view.origin, view.angles );
+			pPlayer->CalcViewModelView( viewSetup.origin, viewSetup.angles );
 
 			// Is this the proper place for this code?
 			if ( cl_camera_follow_bone_index.GetInt() >= -1 && input->CAM_IsThirdPerson() )
 			{
-				VectorCopy( g_cameraFollowPos, view.origin );
+				VectorCopy( g_cameraFollowPos, viewSetup.origin );
 			}
 		}
 
@@ -709,19 +708,19 @@ void CViewRender::SetUpView()
 	}
 
 	// give the toolsystem a chance to override the view
-	ToolFramework_SetupEngineView( view.origin, view.angles, view.fov );
+	ToolFramework_SetupEngineView( viewSetup.origin, viewSetup.angles, viewSetup.fov );
 
 	if ( engine->IsPlayingDemo() )
 	{
 		if ( cl_demoviewoverride.GetFloat() > 0.0f )
 		{
 			// Retreive view angles from engine ( could have been set in IN_AdjustAngles above )
-			CalcDemoViewOverride( view.origin, view.angles );
+			CalcDemoViewOverride( viewSetup.origin, viewSetup.angles );
 		}
 		else
 		{
-			s_DemoView = view.origin;
-			s_DemoAngle = view.angles;
+			s_DemoView = viewSetup.origin;
+			s_DemoAngle = viewSetup.angles;
 		}
 	}
 
@@ -729,36 +728,36 @@ void CViewRender::SetUpView()
 	partition->SuppressLists( PARTITION_ALL_CLIENT_EDICTS, true );
 
 	//Find the offset our current FOV is from the default value
-	float flFOVOffset = default_fov.GetFloat() - view.fov;
+	float flFOVOffset = default_fov.GetFloat() - viewSetup.fov;
 
 	//Adjust the viewmodel's FOV to move with any FOV offsets on the viewer's end
-	view.fovViewmodel = GetClientMode()->GetViewModelFOV() - flFOVOffset;
+	viewSetup.fovViewmodel = GetClientMode()->GetViewModelFOV() - flFOVOffset;
 
 	// Compute the world->main camera transform
-	ComputeCameraVariables( view.origin, view.angles, &g_vecVForward[ nSlot ], &g_vecVRight[ nSlot ], &g_vecVUp[ nSlot ], &g_matCamInverse[ nSlot ] );
+	ComputeCameraVariables( viewSetup.origin, viewSetup.angles, &g_vecVForward[ nSlot ], &g_vecVRight[ nSlot ], &g_vecVUp[ nSlot ], &g_matCamInverse[ nSlot ] );
 
 	// set up the hearing origin...
 	AudioState_t audioState;
-	audioState.m_Origin = view.origin;
-	audioState.m_Angles = view.angles;
-	audioState.m_bIsUnderwater = pPlayer && pPlayer->AudioStateIsUnderwater( view.origin );
+	audioState.m_Origin = viewSetup.origin;
+	audioState.m_Angles = viewSetup.angles;
+	audioState.m_bIsUnderwater = ( pPlayer ) ? pPlayer->AudioStateIsUnderwater( viewSetup.origin ) : false;
 
 	ToolFramework_SetupAudioState( audioState );
 
-	view.origin = audioState.m_Origin;
-	view.angles = audioState.m_Angles;
+	viewSetup.origin = audioState.m_Origin;
+	viewSetup.angles = audioState.m_Angles;
 
 	GetClientMode()->OverrideAudioState( &audioState );
 	engine->SetAudioState( audioState );
 
 	g_vecPrevRenderOrigin[ nSlot ] = g_vecRenderOrigin[ nSlot ];
 	g_vecPrevRenderAngles[ nSlot ] = g_vecRenderAngles[ nSlot ];
-	g_vecRenderOrigin[ nSlot ] = view.origin;
-	g_vecRenderAngles[ nSlot ] = view.angles;
+	g_vecRenderOrigin[ nSlot ] = viewSetup.origin;
+	g_vecRenderAngles[ nSlot ] = viewSetup.angles;
 
 #ifdef DBGFLAG_ASSERT
-	s_DbgSetupOrigin[ nSlot ] = view.origin;
-	s_DbgSetupAngles[ nSlot ] = view.angles;
+	s_DbgSetupOrigin[ nSlot ] = viewSetup.origin;
+	s_DbgSetupAngles[ nSlot ] = viewSetup.angles;
 #endif
 
 	m_bAllowViewAccess = false;
