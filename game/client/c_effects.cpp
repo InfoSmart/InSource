@@ -326,8 +326,8 @@ inline bool CClient_Precipitation::SimulateSnow( CPrecipitationParticle* pPartic
 
 void CClient_Precipitation::Simulate( float dt )
 {
-	if ( m_nPrecipType == PRECIPITATION_TYPE_PARTICLERAIN /*|| m_nPrecipType == PRECIPITATION_TYPE_PARTICLEASH 
-		|| m_nPrecipType == PRECIPITATION_TYPE_PARTICLERAINSTORM || PRECIPITATION_TYPE_PARTICLESNOW*/ )
+	if ( m_nPrecipType == PRECIPITATION_TYPE_PARTICLERAIN || m_nPrecipType == PRECIPITATION_TYPE_PARTICLEASH 
+		|| m_nPrecipType == PRECIPITATION_TYPE_PARTICLERAINSTORM || PRECIPITATION_TYPE_PARTICLESNOW )
 	{
 		CreateParticlePrecip();
 		return;
@@ -502,16 +502,12 @@ void CClient_Precipitation::Render()
 {
 	ASSERT_LOCAL_PLAYER_RESOLVABLE();
 	int nSlot = GET_ACTIVE_SPLITSCREEN_SLOT();
-
 	if ( !r_DrawRain.GetInt() )
 		return;
 
-	if ( m_nPrecipType == PRECIPITATION_TYPE_PARTICLERAIN )
+	if ( m_nPrecipType == PRECIPITATION_TYPE_PARTICLERAIN || m_nPrecipType == PRECIPITATION_TYPE_PARTICLEASH 
+		|| m_nPrecipType == PRECIPITATION_TYPE_PARTICLERAINSTORM || PRECIPITATION_TYPE_PARTICLESNOW )
 		return;
-
-	//if ( m_nPrecipType == PRECIPITATION_TYPE_PARTICLERAIN || m_nPrecipType == PRECIPITATION_TYPE_PARTICLEASH 
-		//|| m_nPrecipType == PRECIPITATION_TYPE_PARTICLERAINSTORM || PRECIPITATION_TYPE_PARTICLESNOW )
-		//return;
 
 	// Don't render in monitors or in reflections or refractions.
 	if ( CurrentViewID() == VIEW_MONITOR )
@@ -528,7 +524,6 @@ void CClient_Precipitation::Render()
 
 	// Create any queued up water splashes.
 	CreateWaterSplashes();
-
 	
 	CFastTimer timer;
 	timer.Start();

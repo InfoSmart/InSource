@@ -3542,20 +3542,22 @@ void C_BaseAnimating::ProcessMuzzleFlashEvent()
 		//FIXME: We should really use a named attachment for this
 		if ( m_Attachments.Count() > 0 )
 		{
-			Vector vAttachment;
+			Vector vAttachment, vAng;
 			QAngle dummyAngles;
 			GetAttachment( 1, vAttachment, dummyAngles );
 
+			AngleVectors( dummyAngles, &vAng );
+			vAttachment += vAng * 2;
+
 			// Make an elight
-			dlight_t *el = effects->CL_AllocElight( LIGHT_INDEX_MUZZLEFLASH + index );
-			el->origin = vAttachment;
-			el->radius = random->RandomInt( 32, 64 ); 
-			el->decay = el->radius / 0.05f;
-			el->die = gpGlobals->curtime + 0.05f;
-			el->color.r = 255;
-			el->color.g = 192;
-			el->color.b = 64;
-			el->color.exponent = 5;
+			dlight_t *el		= effects->CL_AllocDlight( LIGHT_INDEX_MUZZLEFLASH + index );
+			el->origin			= vAttachment;
+			el->radius			= random->RandomFloat( 245.0f, 256.0f ); 
+			el->decay			= 512.0f;
+			el->die				= gpGlobals->curtime + 0.05f;
+			el->color.r			= 235;
+			el->color.g			= 142;
+			el->color.b			= 65;
 		}
 	}
 }
@@ -3576,16 +3578,16 @@ void C_BaseAnimating::DoAnimationEvents( CStudioHdr *pStudioHdr )
 
 	// If we're invisible, don't draw the muzzle flash
 	bool bIsInvisible = !IsVisibleToAnyPlayer() && !IsViewModel() && !IsMenuModel();
-	if ( bIsInvisible && !clienttools->IsInRecordingMode() )
-		return;
 
 	// add in muzzleflash effect
-	if ( ShouldMuzzleFlash() )
+	if ( ShouldMuzzleFlash() && (!bIsInvisible || IsBaseCombatWeapon()) )
 	{
 		DisableMuzzleFlash();
-		
 		ProcessMuzzleFlashEvent();
 	}
+
+	//if ( bIsInvisible && !clienttools->IsInRecordingMode() )
+		//return;
 
 	// If we're invisible, don't process animation events.
 	if ( bIsInvisible )

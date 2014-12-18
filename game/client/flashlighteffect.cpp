@@ -18,9 +18,9 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-//=========================================================
+//===============================================================================
 // Comandos
-//=========================================================
+//===============================================================================
 
 static ConVar r_flashlightoffsetx( "r_flashlightoffsetx", "5.0", FCVAR_CHEAT );
 static ConVar r_flashlightoffsety( "r_flashlightoffsety", "-5.0", FCVAR_CHEAT );
@@ -30,16 +30,16 @@ static ConVar r_flashlightconstant( "r_flashlightconstant", "0.0", FCVAR_CHEAT )
 static ConVar r_flashlightquadratic( "r_flashlightquadratic", "0.0", FCVAR_CHEAT );
 static ConVar r_flashlightambient( "r_flashlightambient", "0.0", FCVAR_CHEAT );
 
-//=========================================================
+//===============================================================================
 // Constructor
-//=========================================================
-CFlashlightEffect::CFlashlightEffect( int nEntIndex, const char *pTextureName ) : BaseClass( nEntIndex, pTextureName )
+//===============================================================================
+CFlashlightEffect::CFlashlightEffect( int index, const char *pTextureName ) : BaseClass( index, pTextureName )
 {
 }
 
-//=========================================================
+//===============================================================================
 // Inicia la configuración recomendada
-//=========================================================
+//===============================================================================
 void CFlashlightEffect::Init()
 {
 	SetOffset( r_flashlightoffsetx.GetFloat(), r_flashlightoffsety.GetFloat(), r_flashlightoffsetz.GetFloat() );
@@ -49,11 +49,17 @@ void CFlashlightEffect::Init()
 	SetAlpha( r_flashlightambient.GetFloat() );
 }
 
+//===============================================================================
+// Constructor
+//===============================================================================
 CHeadlightEffect::CHeadlightEffect() 
 {
 
 }
 
+//===============================================================================
+// Destructor
+//===============================================================================
 CHeadlightEffect::~CHeadlightEffect()
 {
 	

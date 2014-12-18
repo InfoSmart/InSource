@@ -135,13 +135,13 @@ ConVar r_flashlightdepthtexture( "r_flashlightdepthtexture", "1" );
 #if defined( _X360 )
 ConVar r_flashlightdepthreshigh( "r_flashlightdepthreshigh", "512" );
 #else
-ConVar r_flashlightdepthreshigh( "r_flashlightdepthreshigh", "2048" );
+ConVar r_flashlightdepthreshigh( "r_flashlightdepthreshigh", "1024" );
 #endif
 
 #if defined( _X360 )
 ConVar r_flashlightdepthres( "r_flashlightdepthres", "512" );
 #else
-ConVar r_flashlightdepthres( "r_flashlightdepthres", "1024" );
+ConVar r_flashlightdepthres( "r_flashlightdepthres", "512" );
 #endif
 
 #if defined( _X360 )
@@ -1551,17 +1551,21 @@ void CClientShadowMgr::InitRenderTargets()
 
 	SetShadowBlobbyCutoffArea( 0.005 );
 
-
 	if ( r_shadowrendertotexture.GetBool() )
 	{
 		InitRenderToTextureShadows();
 	}
 
-	// If someone turned shadow depth mapping on but we can't do it, force it off
-	if ( r_flashlightdepthtexture.GetBool() && !g_pMaterialSystemHardwareConfig->SupportsShadowDepthTextures() )
+	bool bForceShadows = CommandLine()->CheckParm( "-forceshadows" ) != NULL;
+
+	if ( !bForceShadows )
 	{
-		r_flashlightdepthtexture.SetValue( 0 );
-		ShutdownDepthTextureShadows();	
+		// If someone turned shadow depth mapping on but we can't do it, force it off
+		if ( r_flashlightdepthtexture.GetBool() && !g_pMaterialSystemHardwareConfig->SupportsShadowDepthTextures() )
+		{
+			r_flashlightdepthtexture.SetValue( 0 );
+			ShutdownDepthTextureShadows();
+		}
 	}
 
 	InitDepthTextureShadows();
@@ -1621,13 +1625,16 @@ void CClientShadowMgr::Shutdown()
 void CClientShadowMgr::InitDepthTextureShadows()
 {
 	VPROF_BUDGET( "CClientShadowMgr::InitDepthTextureShadows", VPROF_BUDGETGROUP_SHADOW_DEPTH_TEXTURING );
+	bool bForceShadows = CommandLine()->CheckParm( "-forceshadows" ) != NULL;
 
 	// SAUL: start benchmark timer
 	CFastTimer timer;
 	timer.Start();
- 
-	// SAUL: set m_nDepthTextureResolution to the depth resolution we want
-	m_nDepthTextureResolution = r_flashlightdepthres.GetInt();
+
+	if ( bForceShadows && !m_bDepthTexturesAllocated )
+	{
+		r_flashlightdepthtexture.SetValue( 1 );
+	}
 
 	if ( m_bDepthTextureActive )
 		return;
@@ -1643,6 +1650,11 @@ void CClientShadowMgr::InitDepthTextureShadows()
 		m_bDepthTexturesAllocated = true;
 
 		ImageFormat dstFormat  = g_pMaterialSystemHardwareConfig->GetShadowDepthTextureFormat();	// Vendor-dependent depth texture format
+
+		// Forzamos las sombras en tiempo real
+		if ( !g_pMaterialSystemHardwareConfig->SupportsShadowDepthTextures() && bForceShadows )
+			dstFormat = IMAGE_FORMAT_D16_SHADOW;
+
 #if !defined( _X360 )
 		ImageFormat nullFormat = g_pMaterialSystemHardwareConfig->GetNullTextureFormat();			// Vendor-dependent null texture format (takes as little memory as possible)
 #endif
@@ -1661,6 +1673,7 @@ void CClientShadowMgr::InitDepthTextureShadows()
 		// Create some number of depth-stencil textures
 		m_DepthTextureCache.Purge();
 		m_DepthTextureCacheLocks.Purge();
+
 		for( int i=0; i < m_nMaxDepthTextureShadows; i++ )
 		{
 			CTextureReference depthTex;	// Depth-stencil surface
@@ -1669,7 +1682,8 @@ void CClientShadowMgr::InitDepthTextureShadows()
 			char strRTName[64];
 			sprintf( strRTName, "_rt_ShadowDepthTexture_%d", i );
 
-			//int nTextureResolution = ( i < MAX_DEPTH_TEXTURE_HIGHRES_SHADOWS ? m_nDepthTextureResolutionHigh : m_nDepthTextureResolution );
+			
+			int nTextureResolution = ( i < MAX_DEPTH_TEXTURE_HIGHRES_SHADOWS ? m_nDepthTextureResolutionHigh : m_nDepthTextureResolution );
 
 #if defined( _X360 )
 			// create a render target to use as a resolve target to get the shared depth buffer
@@ -1678,7 +1692,7 @@ void CClientShadowMgr::InitDepthTextureShadows()
 			depthTex.InitRenderTargetSurface( 1, 1, dstFormat, false );
 #else
 			// SAUL: we want to create a *DEPTH TEXTURE* of specific size, so use RT_SIZE_NO_CHANGE and MATERIAL_RT_DEPTH_ONLY
-			depthTex.InitRenderTarget( m_nDepthTextureResolution, m_nDepthTextureResolution, RT_SIZE_NO_CHANGE, dstFormat, MATERIAL_RT_DEPTH_ONLY, false, strRTName );
+			depthTex.InitRenderTarget( nTextureResolution, nTextureResolution, RT_SIZE_NO_CHANGE, dstFormat, MATERIAL_RT_DEPTH_ONLY, false, strRTName );
 #endif
 
 			m_DepthTextureCache.AddToTail( depthTex );
@@ -1896,7 +1910,7 @@ void CClientShadowMgr::LevelShutdownPostEntity()
 	// flashlight shadows just in case.
 	for ( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; i++ )
 	{
-		FlashlightEffectManager( i ).TurnOffFlashlight( true );
+		//FlashlightEffectManager( i ).TurnOffFlashlight( true );
 	}
 
 	// All shadows *should* have been cleaned up when the entities went away
@@ -4228,11 +4242,16 @@ void CClientShadowMgr::ReprojectShadows()
 		// VPROF scope
 		//VPROF_BUDGET( "CClientShadowMgr::PreRender", VPROF_BUDGETGROUP_SHADOW_DEPTH_TEXTURING );
 
-		// If someone turned shadow depth mapping on but we can't do it, force it off
-		if ( r_flashlightdepthtexture.GetBool() && !g_pMaterialSystemHardwareConfig->SupportsShadowDepthTextures() )
+		bool bForceShadows = CommandLine()->CheckParm( "-forceshadows" ) != NULL;
+
+		if ( !bForceShadows )
 		{
-			r_flashlightdepthtexture.SetValue( 0 );
-			ShutdownDepthTextureShadows();	
+			// If someone turned shadow depth mapping on but we can't do it, force it off
+			if ( r_flashlightdepthtexture.GetBool() && !g_pMaterialSystemHardwareConfig->SupportsShadowDepthTextures() )
+			{
+				r_flashlightdepthtexture.SetValue( 0 );
+				ShutdownDepthTextureShadows();	
+			}
 		}
 
 		bool bDepthTextureActive     = r_flashlightdepthtexture.GetBool();

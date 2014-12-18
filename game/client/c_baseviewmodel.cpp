@@ -201,7 +201,7 @@ bool C_BaseViewModel::Interpolate( float currentTime )
 
 inline bool C_BaseViewModel::ShouldFlipViewModel()
 {
-	return true;
+	return false;
 }
 
 

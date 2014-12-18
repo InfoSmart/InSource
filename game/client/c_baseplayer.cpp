@@ -368,8 +368,9 @@ BEGIN_PREDICTION_DATA( C_BasePlayer )
 
 END_PREDICTION_DATA()
 
-
-LINK_ENTITY_TO_CLASS( player, C_BasePlayer );
+#ifndef APOCALYPSE
+//LINK_ENTITY_TO_CLASS( player, C_BasePlayer );
+#endif
 
 
 // -------------------------------------------------------------------------------- //
@@ -421,7 +422,7 @@ C_BasePlayer::C_BasePlayer() : m_iv_vecViewOffset( "C_BasePlayer::m_iv_vecViewOf
 C_BasePlayer::~C_BasePlayer()
 {
 	DeactivateVguiScreen( m_pCurrentVguiScreen.Get() );
-	for ( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; ++i )
+	/*for ( int i = 0; i < MAX_SPLITSCREEN_PLAYERS; ++i )
 	{
 		if ( this == s_pLocalPlayer[ i ] )
 		{	
@@ -437,7 +438,7 @@ C_BasePlayer::~C_BasePlayer()
 			FlashlightEffectManager( i ).TurnOffFlashlight( true );
 			m_bFlashlightEnabled[ i ] = false;
 		}
-	}
+	}*/
 }
 
 //-----------------------------------------------------------------------------
@@ -1157,7 +1158,7 @@ void C_BasePlayer::TeamChange( int iNewTeam )
 //-----------------------------------------------------------------------------
 void C_BasePlayer::UpdateFlashlight()
 {
-	ASSERT_LOCAL_PLAYER_RESOLVABLE();
+	/*ASSERT_LOCAL_PLAYER_RESOLVABLE();
 	int iSsPlayer = GET_ACTIVE_SPLITSCREEN_SLOT();
 
 	// TERROR: if we're in-eye spectating, use that player's flashlight
@@ -1254,7 +1255,7 @@ void C_BasePlayer::UpdateFlashlight()
 		FlashlightEffectManager().UpdateFlashlight( vecPos, vecForward, vecRight, vecUp, pFlashlightPlayer->GetFlashlightFOV(), 
 			pFlashlightPlayer->CastsFlashlightShadows(), pFlashlightPlayer->GetFlashlightFarZ(), pFlashlightPlayer->GetFlashlightLinearAtten(),
 			pFlashlightPlayer->GetFlashlightTextureName() );
-	}
+	}*/
 }
 
 
@@ -1275,11 +1276,11 @@ void C_BasePlayer::TurnOffFlashlight( void )
 	ASSERT_LOCAL_PLAYER_RESOLVABLE();
 	int nSlot = GET_ACTIVE_SPLITSCREEN_SLOT();
 
-	if ( m_bFlashlightEnabled[ nSlot ] )
+	/*if ( m_bFlashlightEnabled[ nSlot ] )
 	{
 		FlashlightEffectManager().TurnOffFlashlight();
 		m_bFlashlightEnabled[ nSlot ] = false;
-	}
+	}*/
 }
 
 

@@ -64,9 +64,6 @@
     <Filter Include="Source Files\Apocalypse\Shared">
       <UniqueIdentifier>{d962d447-7e28-40cb-87ab-ceee70800f98}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\Apocalypse\Shared\Reglas del Juego">
-      <UniqueIdentifier>{a58420fd-f481-4eb7-be64-0cfdc1f9512b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\InSource\VGUI">
       <UniqueIdentifier>{f978ef00-df80-4d91-97a7-606ca76cfb48}</UniqueIdentifier>
     </Filter>
@@ -90,6 +87,15 @@
     </Filter>
     <Filter Include="Source Files\InSource\Shared\Items">
       <UniqueIdentifier>{b78c00db-8e13-44ac-bf74-e7b00a8acce9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Apocalypse\Shared\Gamerules">
+      <UniqueIdentifier>{a58420fd-f481-4eb7-be64-0cfdc1f9512b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\NextBot">
+      <UniqueIdentifier>{82fba24e-80b8-4a8d-9a5b-38573b4b64f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\InSource\Shared\Players\Animation">
+      <UniqueIdentifier>{831fb07c-4100-43f3-9096-416a67632b6c}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1451,9 +1457,6 @@
     <ClCompile Include="sdk\sdk_prediction.cpp">
       <Filter>Source Files\SDK</Filter>
     </ClCompile>
-    <ClCompile Include="sdk\sdk_input.cpp">
-      <Filter>Source Files\SDK</Filter>
-    </ClCompile>
     <ClCompile Include="hud_crosshair.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -1535,14 +1538,11 @@
     <ClCompile Include="..\shared\in\multiplayer_animstate.cpp">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClCompile>
-    <ClCompile Include="..\shared\ap\ap_survival_gamerules.cpp">
-      <Filter>Source Files\Apocalypse\Shared\Reglas del Juego</Filter>
-    </ClCompile>
     <ClCompile Include="ap\c_ap_player_infected.cpp">
       <Filter>Source Files\Apocalypse</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\ap\ap_gamerules.cpp">
-      <Filter>Source Files\Apocalypse\Shared\Reglas del Juego</Filter>
+      <Filter>Source Files\Apocalypse\Shared\Gamerules</Filter>
     </ClCompile>
     <ClCompile Include="in\VAwesomium.cpp">
       <Filter>Source Files\InSource\VGUI</Filter>
@@ -1571,9 +1571,6 @@
     <ClCompile Include="in\vgui_basehtml.cpp">
       <Filter>Source Files\InSource\VGUI</Filter>
     </ClCompile>
-    <ClCompile Include="in\gameui_interface.cpp">
-      <Filter>Source Files\InSource</Filter>
-    </ClCompile>
     <ClCompile Include="in\in_hud_chat.cpp">
       <Filter>Source Files\InSource\HUD</Filter>
     </ClCompile>
@@ -1596,9 +1593,6 @@
       <Filter>Source Files\InSource</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\in\in_player_shared.cpp">
-      <Filter>Source Files\InSource\Shared\Players</Filter>
-    </ClCompile>
-    <ClCompile Include="..\shared\in\in_playeranimstate.cpp">
       <Filter>Source Files\InSource\Shared\Players</Filter>
     </ClCompile>
     <ClCompile Include="..\shared\in\in_player_inventory.cpp">
@@ -1624,6 +1618,27 @@
     </ClCompile>
     <ClCompile Include="..\shared\in\item_object.cpp">
       <Filter>Source Files\InSource\Shared\Items</Filter>
+    </ClCompile>
+    <ClCompile Include="ap\ap_input.cpp">
+      <Filter>Source Files\Apocalypse</Filter>
+    </ClCompile>
+    <ClCompile Include="in\c_fire.cpp">
+      <Filter>Source Files\InSource</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\ap\ap_ss_gamerules.cpp">
+      <Filter>Source Files\Apocalypse\Shared\Gamerules</Filter>
+    </ClCompile>
+    <ClCompile Include="in\NextBot\c_nb.cpp">
+      <Filter>Source Files\InSource\NextBot</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\in_playeranimstate.cpp">
+      <Filter>Source Files\InSource\Shared\Players\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\shared\in\nb_playeranimstate.cpp">
+      <Filter>Source Files\InSource\Shared\Players\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="in\gameui_interface.cpp">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -3433,9 +3448,6 @@
     <ClInclude Include="sdk\vgui\sdk_logo_panel.h">
       <Filter>Source Files\SDK\vgui</Filter>
     </ClInclude>
-    <ClInclude Include="sdk\sdk_input.h">
-      <Filter>Source Files\SDK</Filter>
-    </ClInclude>
     <ClInclude Include="sdk\vgui\nb_header_footer.h">
       <Filter>Source Files\SDK\vgui</Filter>
     </ClInclude>
@@ -3508,14 +3520,11 @@
     <ClInclude Include="..\shared\in\multiplayer_animstate.h">
       <Filter>Source Files\InSource\Shared</Filter>
     </ClInclude>
-    <ClInclude Include="..\shared\ap\ap_survival_gamerules.h">
-      <Filter>Source Files\Apocalypse\Shared\Reglas del Juego</Filter>
-    </ClInclude>
     <ClInclude Include="ap\c_ap_player_infected.h">
       <Filter>Source Files\Apocalypse</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\ap\ap_gamerules.h">
-      <Filter>Source Files\Apocalypse\Shared\Reglas del Juego</Filter>
+      <Filter>Source Files\Apocalypse\Shared\Gamerules</Filter>
     </ClInclude>
     <ClInclude Include="in\VAwesomium.h">
       <Filter>Source Files\InSource\VGUI</Filter>
@@ -3544,9 +3553,6 @@
     <ClInclude Include="in\vgui_basehtml.h">
       <Filter>Source Files\InSource\VGUI</Filter>
     </ClInclude>
-    <ClInclude Include="in\gameui_interface.h">
-      <Filter>Source Files\InSource</Filter>
-    </ClInclude>
     <ClInclude Include="in\in_hud_chat.h">
       <Filter>Source Files\InSource\HUD</Filter>
     </ClInclude>
@@ -3564,9 +3570,6 @@
     </ClInclude>
     <ClInclude Include="in\in_view_scene.h">
       <Filter>Source Files\InSource</Filter>
-    </ClInclude>
-    <ClInclude Include="..\shared\in\in_playeranimstate.h">
-      <Filter>Source Files\InSource\Shared\Players</Filter>
     </ClInclude>
     <ClInclude Include="..\shared\in\in_player_inventory.h">
       <Filter>Source Files\InSource\Shared\Players</Filter>
@@ -3588,6 +3591,27 @@
     </ClInclude>
     <ClInclude Include="..\shared\in\item_object.h">
       <Filter>Source Files\InSource\Shared\Items</Filter>
+    </ClInclude>
+    <ClInclude Include="ap\ap_input.h">
+      <Filter>Source Files\Apocalypse</Filter>
+    </ClInclude>
+    <ClInclude Include="in\c_fire.h">
+      <Filter>Source Files\InSource</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\ap\ap_ss_gamerules.h">
+      <Filter>Source Files\Apocalypse\Shared\Gamerules</Filter>
+    </ClInclude>
+    <ClInclude Include="in\NextBot\c_nb.h">
+      <Filter>Source Files\InSource\NextBot</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\in_playeranimstate.h">
+      <Filter>Source Files\InSource\Shared\Players\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\shared\in\nb_playeranimstate.h">
+      <Filter>Source Files\InSource\Shared\Players\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="in\gameui_interface.h">
+      <Filter>Source Files\InSource\Old GameUI</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

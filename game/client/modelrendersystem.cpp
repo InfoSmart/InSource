@@ -1027,6 +1027,9 @@ void CModelRenderSystem::SetupStandardLighting( LightingList_t &lightingList )
 	ITexture **ppEnvCubemap = (ITexture**)stackalloc( nTotalModels * sizeof(ITexture*) );
 	modelrender->ComputeLightingState( nTotalModels, pLightingQuery, pLightingState, ppEnvCubemap );
 
+	if ( !pLightingState )
+		return;
+
 	// Hook up pointers
 	MaterialLightingState_t *pCurrState = pLightingState;
 	for ( int i = 0; i < nSetupCount; ++i )

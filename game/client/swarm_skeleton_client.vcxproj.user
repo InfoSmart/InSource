@@ -6,7 +6,19 @@
     <LocalDebuggerCommandArguments>$(debugCommandLine) -game "$(appsDir)\Sourcemods\$(modName)\"</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>$(appsDir)\common\alien swarm</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LocalDebuggerCommand>$(appsDir)\common\alien swarm\swarm.exe</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>$(debugCommandLine) -game "$(appsDir)\Sourcemods\$(modName)\"</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>$(appsDir)\common\alien swarm</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LocalDebuggerCommand>$(appsDir)\common\alien swarm\swarm.exe</LocalDebuggerCommand>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>$(debugCommandLine) -game "$(appsDir)\Sourcemods\$(modName)"</LocalDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>$(appsDir)\common\alien swarm</LocalDebuggerWorkingDirectory>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LocalDebuggerCommand>$(appsDir)\common\alien swarm\swarm.exe</LocalDebuggerCommand>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerCommandArguments>$(debugCommandLine) -game "$(appsDir)\Sourcemods\$(modName)"</LocalDebuggerCommandArguments>
